@@ -10,12 +10,12 @@ Upon reaching discrimination criterion, each subject received an intraperitoneal
 
 The experimental data generated for analyses are:
 
-CDC training data; context A and context A' freezing values and context order for each training day
+1.  CDC training data; context A and context A' freezing values and context order for each training day
 
-CDC testing data; context A and context A' freezing values for the testing session
+2.  CDC testing data; context A and context A' freezing values for the testing session
 
-Relative levels of dorsal hippocampal (dHPC) proinflammatory cytokines
+3.  Relative levels of dorsal hippocampal (dHPC) proinflammatory cytokines
 
-Neuronal circuity activity in the dHPC
+4.  Neuronal circuity activity in the dHPC
 
 Here we present the transparent and reproducible analysis of the experimental data.
