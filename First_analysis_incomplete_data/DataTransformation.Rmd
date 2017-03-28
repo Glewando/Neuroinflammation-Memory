@@ -1,0 +1,365 @@
+---
+title: 'Neuroinflammation effect on context discrimination memory: Data Transformation'
+author: "Gail Lewandowski"
+date: "March 25, 2017"
+output: pdf_document
+---
+
+## Data transformation
+
+In this section summary values are added to the tidy experimental data sets (training and testing).  Summary values include:   
+
+1. discrimination ratios (DR), a quantitative summary value of overall contextual freezing (training and testing)   
+
+2. freezing criteria (freezing_criteria), a qualitative summary value indicating whether the freezing criteria were met (training and testing)   
+
+3. context discrimination (context_discrim), a qualitative summary value indicating whether all criteria for contextual discrimination conditioning were met (training only)   
+
+4. similarity score, a quantitative summary value indicating the similarity of the neuronal ensemble activated during context A (epoch 1) to the neuronal ensemble activated during context A' (epoch 2) (testing only)   
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load required packages:
+
+```{r load libraries, echo=FALSE, results='hide'}
+suppressMessages({
+    library(rmarkdown)
+    library(knitr)
+    library(tidyverse)  ## for transformation functions
+    library(pander)
+    
+    # library(broom)
+    # library(stringr)
+    # library(operator.tools)
+})
+```
+
+### Training Data   
+
+Load the tidy training data set;   
+
+```{r load training_dat table, echo=FALSE, eval=FALSE}
+load(file = "tidy_training_data.RData")
+
+load(file = "rats_to_append.RData")
+```
+
+Contextual discrimination memory was assessed by measuring freezing in two similar behavioral chambers.  There was a mild footshock in context A but not in context A'.  Rats were were trained to criterion as defined by **>=25% freezing in A and <=10% freezing in A' for 2 consecutive days**.  
+
+#### Add Discrimination Ratio variable to the training data
+
+Memory strength (or sensitivity) is measured by the percent freezing in context A, and memory specificity is inversely proportional to the percent freezing in context A'.  The data from both contexts are often presented together; freezing in A increases as freezing in A' decreases.   
+Another measure used is the **Discrimination Ratio** (DR) which is defined as:   
+    %freezing_A - %freezing_A' / %freezing_A + %freezing_A'   
+    
+In this section the summary variable "DR" (discrimination ratio) will be calculated and added to it.  
+
+```{r add DR variable training data}
+## use mutate() from dplyr (tidyverse) to add the DR variable to the training_dat
+training_dat <- training_dat %>%
+    mutate(training_DR = (training_A - `training_A'`)/
+               (training_A + `training_A'`))
+
+## round to 3 decimal places
+training_dat[,"training_DR"] <- round(training_dat[,"training_DR"],3)
+```
+
+Here is a view of 15 random rows from the new `training_dat` table:  
+
+```{r view training_dat }
+## view random rows of the training_dat table
+set.seed(348)
+t <- head(sample_n(training_dat, 366), 15)
+pander(t,
+       caption = "training_dat table",
+       caption.placement = "top",
+       digits = 3, style = 'rmarkdown', split.table = "Inf")
+```
+
+#### Add the "freezing_criteria" variable to the training data  
+
+A rat has a successful context discrimination session if freezing in A is >=25 **AND** freezing in A' is <=10.   
+
+Here the variable "freezing_criteria" is added for each rat per training day to indicate whether a the rat met the context freezing criteria for that session.  A "freezing_criteria" of 'y' indicates that the freezing criterion for both context A and context A' were met, a value of 'n' indicates that the freezing criteria were not met.   
+
+```{r add training freezing_criterion var}
+## condition for sucessful freezing event
+freeze_con <- training_dat$training_A >= 25 & training_dat$`training_A'`<=10 
+
+## Add the variable
+training_dat$freezing_criteria <- ifelse(freeze_con, "y", "n")
+```
+
+```{r cleanup 08, echo=FALSE, results='hide'}
+remove(freeze_con, t)
+```
+
+We can first determine whether or not all rats in the training table with more than one training day satisfy the freezing criteria on at least one training day.   This group of 42 rats does not include the 4 rats appended to the training table that have data for only one, presumably the final, training day.   
+
+```{r inspect freezing_criteria, cache=TRUE}
+## make a temporary table containing all the rats and training
+## sessions where the freezing criteria were met
+dat1 <- training_dat %>%
+    group_by(rat) %>%
+    filter(rat %!in% rats_to_append) %>%
+    summarise(num_days = sum(freezing_criteria == "y")) %>%
+    arrange(num_days, rat)
+
+```
+
+
+```{r dat1 table 01, echo=FALSE, cache = TRUE}
+num_freezing_days <- dat1 %>%
+    group_by(num_days) %>%
+    summarise(count = n()) %>%
+    select(count, num_days)
+    
+names(num_freezing_days) <- c("# of rats",
+                              "# days freezing criteria met")
+pander(num_freezing_days, 
+       caption = "Number of rats meeting freezing criteria", 
+       caption.placement = "top", style = "rmarkdown"
+       )
+```
+
+```{r summarise freezing crit rats, echo=FALSE}
+
+## rats that met the freezing criteria at least once:
+yes_freezing_crit <- dat1$rat[dat1$num_days >= 2]
+
+## rats that met the freezing criteria only once:
+freeze_only_1 <- dat1$rat[dat1$num_days == 1]
+
+## rats that never met the freezing criteria:
+no_freezing_crit <- dat1$rat[dat1$num_days ==0]
+
+## the set of non-discriminator rats:
+nd_rats <- union(freeze_only_1, no_freezing_crit)
+
+## save the group of non-discriminator rats for further analysis
+save(nd_rats, file = "nd_rats.RData")
+```
+
+
+Inspection of the table indicates that:  
+    1. `r length(yes_freezing_crit)` rats met the freezing criteria at least 2 times   
+    2. `r length(freeze_only_1)` rats met the freezing criteria only 1 time   
+    3. `r length(no_freezing_crit)` rats did not meet the freezing criteria during any of the training sessions.  
+    
+The 6 rats in groups 2 and 3 above that are classified as non-discriminators:   
+`r nd_rats`   
+
+#### Add the "context_discrim" variable to the training data   
+
+All the criteria for context discrimination are fulfilled when a rat meets the freezing criteria on two consecutive training days.
+
+Here the variable "context_discrim"` (context discrimination) is added and set to:  
+
+1. non-discrimination: ('nd') on days when the context discrimination criteria are not met   
+2. context discrimination conditioning: ('cd') on the 1st day the context discrimination criteria are met (2nd day freezing criteria are met)  
+3. over criteria: ('oc') on all training days past the 1st day when the context discrimination criteria was met  
+
+We already know that there are 6 rats that can be classified as non-discriminators ('nd'), because they did not meet the freezing criteria on consecutive days or they met the criteria only once. So, the "context_discrim" variable is set to 'nd' for these 6 rats.  
+
+Likewise, the 4 rats that were appended to the training data table meet the freezing criteria on their final training day.  We assume that the final training day is the second consecutive training day where the freezing criteria were met. Thus, the "context_discrim" value is set to 'cd' for these 4 rats.
+
+```{r set context_discrim var 01, results='hide'}
+## use the cases_when() function from dplyr
+
+training_dat <- training_dat %>%
+    mutate(context_discrim =
+               case_when(
+                   .$rat %in% nd_rats ~ "nd",
+                   .$rat %in% rats_to_append ~ "cd"
+               ))
+```
+
+```{r cleanup 09, echo=FALSE, results='hide'}
+remove(freeze_only_1, no_freezing_crit)
+```
+
+There are `r length(yes_freezing_crit)` rats that potentially met all the criteria for context discrimination conditioning. However, it must be determined if the freezing criteria were met on two consecutive training days.   
+
+```{r set context_discrim var 02, cache=TRUE}
+
+## filter dat1 for only yes_freezing_crit
+dat1 <- dat1 %>%
+    filter(rat %in% yes_freezing_crit) %>%
+    group_by(rat) %>%
+    arrange(desc(num_days, rat))
+```
+
+
+```{r dat1 table 02, echo=FALSE, cache = TRUE}
+num_freezing_days <- dat1 %>%
+    group_by(num_days) %>%
+    summarise(count = n()) %>%
+    select(count, num_days)
+    
+names(num_freezing_days) <- c("# of rats",
+                              "# days freezing criteria met")
+pander(num_freezing_days, 
+       caption = "Number of rats meeting freezing criteria", 
+       caption.placement = "top", style = "rmarkdown"
+       )
+```
+
+From this table we can see that 23 rats met the freezing criteria on 2 training days and 13 rats met the freezing criteria on more than 2 training days.  This is possible if the freezing criteria were not met on consecutive days or if the freezing criteria were met on more than 2 consecutive days.   
+
+However, from this table we cannot if the rats that met the freezing criteria on 2 days had consecutive days, and this warrants further examination before the classification of 'cd' is assigned.  
+   
+Here we identify all rats meeting the freezing criteria twice, but only on  **non-consecutive** days.       
+
+```{r set context_discrim variable 03}
+rats <- c()
+rats_2days <- dat1$rat[dat1$num_days == 2]
+
+for(r in rats_2days) {
+    
+    ## get the set of training days that 
+    ## freezing criteria was met
+    days <- sort(training_dat$training_day[training_dat$rat==r &
+                              training_dat$freezing_criteria == "y"]) 
+    
+    ## if the days are consecutive, then add the rat
+    ## to the vector `rats`
+    
+    if(days[1]+1 != days[2]) {
+        rats <- append(rats, r)
+    }
+}
+
+## rats that met the freezing criteria on 2 non-consecutive days
+print(paste("identified rats:", rats, sep = " "))
+
+```
+
+From this exploratory analysis we find there is only 1 rat that met the freezing criteria on 2 non-consecutive days.  Rat 14x02_08 met the freezing criteria on training days 13 and 15, but not on day 14.  Since the freezing criteria were not met on consecutive days, the rat is technically classified as a non-discriminator.  However, we should take a further look at the data from training day 14 for this rat.  
+
+```{r 14x02_08 01}
+t <- training_dat %>%
+    filter(rat %in% rats,
+           training_day %in% c(10:15))
+t <- select(t, training_day, context_order, training_A, 
+            `training_A'`, freezing_criteria)
+pander(t, split.table = "Inf")
+```
+
+These data indicate that rat 14x02_08 was at the lower context_A freezing limit for days 13 and 15.  Since context_A is relevant to signal sensitivity (memory strength), it is questionable as to whether or not this rat learned the CDC task. In general, a domain expert may make a judgement call for context discrimination ('cd'). However, based on the rules of context discrimination conditioning applied to this experiment, rat 14x02_08 will be classified as a non-discriminator at all training days.   
+
+```{r 14x02_08 02}
+## update context_discrim variable to "nd" for rat 14x02_08
+training_dat$context_discrim[training_dat$rat == "14x02_08" ] <- "nd"
+```
+
+Now we remove rat 14x02_08 from the set of 36 rats that met the freezing criteria for 2 or more training days and add it to the set of non-discriminator rats ('nd_rats').   
+```{r remove 14x02_08}
+## remove rat 14x02_08 from the set of potential cd rats
+yes_freezing_crit <- yes_freezing_crit[yes_freezing_crit != "14x02_08"]
+
+## add rat 14x02_08 to the set of nd rats
+nd_rats <- append(nd_rats, "14x02_08")
+```
+
+Now the "context_discrim" variable can be set to 'nd', 'cd' or 'oc' for the set of 35 rats that met the freezing criteria for 2 or more training days.   
+
+```{r cleanup 10, echo=FALSE, results='hide'}
+remove(dat1, days, r, rats, num_freezing_days, t, rats_2days)
+```
+
+
+```{r set context_discrim variable 04}
+
+## for freezing_criteria = "n", set context_discrim = "nd"
+training_dat$context_discrim[training_dat$rat %in% yes_freezing_crit &
+                         training_dat$freezing_criteria == "n"] <- "nd"
+
+
+for(r in yes_freezing_crit) {
+    
+    ## get the set of training days that rat r met the freezing criteria
+    days <- sort(training_dat$training_day[training_dat$rat==r &
+                              training_dat$freezing_criteria == "y"]) 
+    
+    ## move through the set of days to find the first set of consecutive days:
+    
+    ## initialize j to 1 (first day in set)
+    j <- 1
+    
+    ## while the days are not consecutive, set `context_discrim` to "nd"
+    while(days[j]+1 != days[j+1]) {
+        training_dat$context_discrim[training_dat$rat==r &
+                                 training_dat$training_day %in% 
+                                 days[c(j, j+1)]] <- "nd"
+            
+        ## increment j to get the next day
+        j <- j+1
+    }
+    
+    ## find the first set of consecutive days (condition in while loop evaluates to FALSE)
+    
+    ## set `context_discrim` for the 1st day to "nd" 
+    training_dat$context_discrim[training_dat$rat==r &
+                             training_dat$training_day ==
+                             days[j]] <- "nd"
+        
+    ## set `context_discrim` for the 2nd day to "cd"
+    training_dat$context_discrim[training_dat$rat==r &
+                             training_dat$training_day ==
+                             days[j+1]] <- "cd"
+    
+    ## increment j to get the next day
+    j <- j+1
+    
+        
+    ## if there are additional days in the set of days, the `context_discrim` is set to "oc"
+    if(j != length(days)) {
+        j <- j+1
+        training_dat$context_discrim[training_dat$rat==r &
+                             training_dat$training_day ==
+                             days[c(j:length(days))]] <- "oc"
+    }
+}
+
+```
+
+```{r set factor variables, echo=FALSE}
+## reorder columns
+training_dat <- training_dat %>%
+    select(study, rat:`training_A'`, 
+           training_DR:context_discrim)
+
+## convert context_discrim to a factor variable
+training_dat$context_discrim <- as.factor(training_dat$context_discrim)
+
+save(training_dat, file = "tidy_transform_training_data.RData")
+```
+
+***
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### R session information:
+```{r session info, echo=FALSE}
+devtools::session_info(
+    c("tidyverse", 
+    "rmarkdown", 
+    "knitr", 
+    "pander"))
+
+```
+

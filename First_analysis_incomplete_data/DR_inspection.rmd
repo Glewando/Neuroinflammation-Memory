@@ -1,0 +1,350 @@
+---
+title: "Inspection of the discrimination ratio"
+author: "Gail Lewandowski"
+date: "February 28, 2017"
+output: github_document    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load libraries, echo=FALSE, results='hide'}
+suppressMessages({
+    library(tidyverse)
+    library(rmarkdown)
+    library(knitr)
+})
+```
+
+## Discrimination Ratio   
+Contextual discrimination memory was assessed by measuring freezing in two similar behavioral chambers.  There was a mild footshock in context A but not in context A'.  Rats were were trained to criterion as defined by >=25% freezing in A **and** <=10% freezing in A' for **2 consecutive days**.  Memory strength (or sensitivity) is proportional to the % freezing in context A, and memory specificity is inversely proportional to the % freezing in context A'.  The data from both contexts are often presented together; freezing in A increases as freezing in A' decreases.   
+Another measure used is the **Discrimination Ratio** (DR) which is defined as:   
+    %A-%A' / %A+%A'   
+
+Here the validity of the DR as a stand-alone measure of context discrimination conditioning (CDC) is examined using the training data from 42 rats.   
+
+```{r load training_dat table}
+load(file = "training_data.RData")
+```
+
+### Addition of the summary DR statistic to the training data
+
+In this section a copy of the `training_dat` table will be made (`training_dat2`) and the summary variable `DR` (discrimination ratio) will be calculated and added to it.  
+
+```{r add DR variable}
+## add the DR variable to a copy of training_dat
+training_dat2 <- training_dat %>%
+    mutate(DR = (training_A - `training_A'`)/
+               (training_A + `training_A'`))
+
+## round to 3 decimal places
+training_dat2[,"DR"] <- round(training_dat2[,"DR"],3)
+```
+
+A rat has a successful context discrimination session if freezing in A is >=25 **AND** freezing in A' is <=10.  Here the variable `CDC` (context discrimination conditioning) is added to indicate context discrimination (CD) or non-discrimination (ND).   
+
+```{r add D variable}
+## condition for sucessful CDC event
+con <- training_dat2$training_A >= 25 & training_dat2$`training_A'`<=10 
+
+## Add the CD variable
+training_dat2$CDC <- ifelse(con, "CD", "ND")
+
+remove(con)
+```
+
+Generate a new table that has just the final day of training for each rat.   
+
+```{r final training day}
+## subset training_dat2 for the last training day for each rat
+final_training_day <- training_dat2 %>%
+    group_by(rat) %>%
+    filter(training_day == max(training_day))
+
+## inspect the table
+head(final_training_day)
+```
+
+### Exploratory analysis of the discrimination ratio   
+
+Exploratory graphs can be used to investigate the relationship between the discrimination ratio and successful context discrimination events.  
+
+#### Exploratory graphs of all training data   
+    1. Distribution of DR for all rats by day   
+    
+```{r all trainingdata all DR}
+## 
+training_dat2 %>% 
+    filter(is.na(DR)==FALSE) %>%
+    ggplot(aes(x= training_day, 
+                       y= DR, color = CDC)) +
+    geom_point(position = "jitter") +
+    geom_smooth(na.rm = TRUE, fullrange = TRUE, 
+                span = 0.8, se = 0)
+
+training_dat2 %>% 
+    filter(is.na(DR)==FALSE) %>%
+    ggplot(aes(x=DR, fill = CDC) ) + 
+    geom_density(alpha=.3, na.rm = TRUE) +
+    facet_wrap(~ training_day, nrow = 5)
+
+
+dat <- training_dat2 %>%
+    group_by(training_day) %>%
+    summarise(n_rats = n_distinct(rat),
+              n_cd = sum(CDC == "CD"), 
+              n_nd = sum(CDC == "ND")) %>%
+    ggplot(aes(x = training_day))+
+    geom_point(mapping = aes(y= n_rats),color = "blue", size =2) +
+    geom_smooth(mapping = aes(y= n_rats),
+                color = "blue", se = 0) +
+    geom_point(mapping = aes(y= n_cd),color = "green", size =2) +
+    geom_smooth(mapping = aes(y= n_cd),
+                color = "green", se = 0) +
+    geom_point(mapping = aes(y= n_nd),color = "red", size =2) +
+    geom_smooth(mapping = aes(y= n_nd),
+                color = "red", se = 0)
+    
+
+
+    
+p1 <- numCD %>%
+    select(training_day, n_nd) %>%
+    ggplot(aes(x = training_day, y = n_nd )) +
+    geom_point(color = "blue", size = 2)
+    
+    
+    
+    
+
+
+
+
+```
+
+    2. Distribution of DR >= 0.5 for all rats by day  
+    
+```{r all training data DR>=0.5}
+
+    
+    
+    ggplot(aes(x= training_day, 
+                       y= DR, color = CDC)) +
+    geom_point(position = "jitter") +
+    geom_smooth(na.rm = TRUE, fullrange = TRUE, 
+                span = 0.8, se = 0)
+
+training_dat2 %>% 
+    filter(is.na(DR)==FALSE,
+           DR >= 0.5) %>%
+    ggplot(aes(x=DR, fill = CDC) ) + 
+    geom_density(alpha=.3, na.rm = TRUE) +
+    facet_wrap(~ training_day, nrow = 5)
+```
+
+
+Exploratory graphs:  
+
+```{r}
+ggplot(training_dat2, aes(x=DR, fill=CD)) + 
+    geom_density(alpha=.3, na.rm = TRUE, ylim = 5.0) +
+    facet_wrap(~ training_day, nrow = 5)
+
+ggplot(data = training_dat2, aes(x= training_day, 
+                       y= DR, color = CD)) +
+    geom_point(na.rm = TRUE, position = "jitter") +
+    geom_smooth(na.rm = TRUE, 
+                fullrange = FALSE, 
+                span = 0.8, se = 0) +
+    facet_wrap(~ Group, nrow = 2)
+
+
+
+ggplot(data = training_dat2, aes(x = DR, fill=CD)) +
+    geom_histogram(alpha = 0.3, na.rm = TRUE, 
+                   binwidth = 0.5, position = "dodge")
+
+#############################################################
+
+## distribution of freezing in A
+### All training data
+ggplot(training_dat2, aes(x=training_A)) + 
+    geom_density(alpha=.3, na.rm = TRUE, fill = "blue")
+
+## by CD vs ND
+ggplot(training_dat2, aes(x=training_A, fill=D)) + 
+    geom_density(alpha=.3, na.rm = TRUE)
+
+ggplot(training_dat2, aes(x=training_A, y = DR, color=D)) + 
+    geom_point(alpha=.3, na.rm = TRUE)
+
+## final training day
+### All final day data
+ggplot(final_training_day, aes(x=training_A)) + 
+    geom_density(alpha=.3, na.rm = TRUE, fill = "blue")
+
+## by CD vs ND
+ggplot(final_training_day, aes(x=training_A, fill=D)) + 
+    geom_density(alpha=.3, na.rm = TRUE)
+
+ggplot(final_training_day, aes(x=training_A, y = DR, color=D)) + 
+    geom_point(alpha=.3, na.rm = TRUE)
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+Here the validity of the DR as a measure of context discrimination conditioning (CDC) using values between 0 and 100 randomly generated for A and A'
+
+```{r ficticious CDC data}
+set.seed(3456)
+x <- 0:90
+
+A1 <- sample(x, 500, replace = TRUE)
+A2 <- sample(x, 500, replace = TRUE)
+
+fict_dat <- tbl_df(data.frame(A1,A2))
+fict_dat <- fict_dat %>%
+    mutate(DR = (A1-A2)/(A1+A2))
+
+## round to 3 decimal places
+fict_dat[,"DR"] <- round(fict_dat[,"DR"],3)
+
+## add D variable
+con <- fict_dat$A1 >= 25 & fict_dat$A2 <=10 
+fict_dat$D <- ifelse(con, "CD", "ND")
+
+ggplot(fict_dat, aes(x=DR, fill=D)) + 
+    geom_density(alpha=.3, na.rm = TRUE)
+
+ggplot(data = training_dat2, aes(x = DR, fill=D)) +
+    geom_histogram(alpha = 0.3, na.rm = TRUE, 
+                   binwidth = 0.5, position = "dodge")
+
+```
+
+
+
+```{r exploratory graphs}
+
+ggplot(fict_dat, aes(x=DR, fill=D)) + geom_density(alpha=.3)
+
+
+ggplot(data = fict_dat, aes(x= DR)) +
+    geom_density(mapping = aes(color = D,
+                               fill = D),
+                 alpha = 0.5,             
+                 na.rm = TRUE)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+Here the validity of the DR as a measure of context discrimination conditioning (CDC) is examined using the training data from 42 rats.   
+
+
+```{r load training_dat table}
+load(file = "training_data.RData")
+```
+
+In this section the summary variable `DR` will be calculated and added to the `training_dat` data table.  
+
+```{r add DR variable}
+## add the DR variable to a copy of training_dat
+training_dat2 <- training_dat %>%
+    mutate(DR = (training_A - `training_A'`)/
+               (training_A + `training_A'`))
+
+## round to 3 decimal places
+training_dat2[,"DR"] <- round(training_dat2[,"DR"],3)
+```
+
+A rat has a successful context discrimination session if freezing in A is >=25 **AND** freezing in A' is <=10.  Here the variable `D` is added to indicate context discrimination (1) or non-discrimination (0).   
+
+```{r add D variable}
+con <- training_dat2$training_A >= 25 & training_dat2$`training_A'`<=10 
+
+training_dat2$D <- ifelse(con, "CD", "ND")
+
+```
+
+Generate a new table that has just the final day of training for each rat.   
+
+```{r final training day}
+final_training_day <- training_dat2 %>%
+    group_by(rat) %>%
+    filter(training_day == max(training_day))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

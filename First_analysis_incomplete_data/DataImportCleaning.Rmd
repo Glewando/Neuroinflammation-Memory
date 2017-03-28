@@ -1,0 +1,957 @@
+---
+title: "Neuroinflammation effect on context discrimination memory: Data Import and Cleaning"
+author: "G. Lewandowski"
+date: March 25, 2017
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load required packages:
+
+```{r load libraries, echo=FALSE, results='hide'}
+suppressMessages({
+    library(rmarkdown)  ## render markdown docs (output)
+    library(knitr)  ## knit markdown docs (output)
+    library(readxl) ## read MS Excel worksheets into data tables
+    library(pander)  ## generate tables in output
+    library(broom) ## 'tidy()' summary output into a data frame
+    library(stringr)  ## use substr() to extract info
+    library(tidyverse)  ## data wrangling: dplyr, tidyr
+    library(operator.tools)  ## %!in%() (not in)
+})
+```
+
+## Data Import   
+The experiment data is contained in three datasheets within a Microsoft Excel workbook. In this step the data is imported from the Excel workbook into data tables.  
+
+```{r file path to the data sheets}
+## path to Eexcel workbook with experiment data (base R)
+path <- file.path("JC14x02.xlsx")
+
+## list the sheets in the Excel workbook
+excel_sheets(path)
+```
+
+The datasheets in the Microsoft workbook are:   
+1.   "Training Data": contains the training data for 42 rats.   
+2.    "ALL SUBJECTS":  contains training, testing, cytokine and cell activity data for 48 rats.   
+3.   "COMPLETE DATA": contains training, testing, cytokine and cell activity data for 43 rats and is a subset of the rats in the "ALL SUBJECTS" datasheet.    
+
+The *COMPLETE DATA* worksheet will not be imported because it contains a subset of data contained in the other two worksheets.    
+
+```{r import datasheets}
+## import "ALL SUBJECTS" worksheet into a data table using the readxl package
+all_subjects <- read_excel(path = path, 
+                           sheet = "ALL SUBJECTS",
+                           na = ".")
+
+## import "Training Data" worksheet into a data table
+training_dat1 <- read_excel(path = path, 
+                            sheet = "Training Data")
+
+## save imported worksheets as RData objects
+save(all_subjects, file = "all_subjects_worksheet.RData")
+save(training_dat1, file = "training_data_worksheet.RData")
+
+rm(path)
+```
+
+## Initial Data Inspection:   
+
+Here we make an initial inspection of the newly imported data tables and identify issues to resolve in order to generate tidy data sets for each imported datasheet.    
+
+### Training Data Inspection   
+
+Get the dimensions of the `training_dat1` data table:   
+
+```{r dim training_dat1}
+## get the dimensions of the dataset
+o <- dim(training_dat1)[1]
+v <- dim(training_dat1)[2]
+```
+
+There are `r o` rows and `r v` variables in the `training_dat1` data table.  
+
+The first 10 rows of the `training_dat1` data table:   
+
+```{r head training_dat1}
+## use pander package to generate table
+
+t2 <- head(training_dat1,10)
+pander(t2, split.table = "Inf")
+```
+
+The variable classes and data types in the training data are:   
+
+```{r variable classes training_dat1}
+## inspect the classes of the dataset
+## use the tidy() function from the broom package to "tidy" the output into a data frame
+
+t3 <- tidy(sapply(training_dat1, class))
+names(t3) <- c("Variable", "Data type")
+          
+pander(t3, caption = "Data types: training_dat1",
+       caption.placement = "top",
+       justify = c('left', 'left'), split.table = "Inf")
+```
+
+
+The data in the `training_dat1` data table is **not** in a tidy data form.  Specifically:   
+
+1. training day values are stored in multiple column names, instead of a variable "training_day", containing integer values for training days   
+
+2. The third column heading (variable name) is missing   
+
+3. The environment context variables (A and A') are stored across multiple rows instead of column variables "training_A" and "training_A'"   
+
+4. The variable "Days of Training" should be removed and used as a calculated summary statistic   
+
+5. The order of context exposure variable for each training day is stored in multiple column names, instead of being stored as values in a variable ("context_order")   
+
+5. There are missing values for context order for multiple rats   
+
+6. The numeric values currently have 6 decimal places, significance to 3 decimal places is more appropriate   
+
+7. The training_dat table should contain the variables "rat", "group", "training_day", "context_order", "training_A", and "training_A'"   
+
+These issues will be addressed during the "Data Wrangling" step.   
+
+```{r cleanup 02, echo=FALSE, results='hide'}
+remove(t2,t3)
+```
+
+### `all_subjects` Data Inspection    
+Get the dimensions of the `training_dat1` data table:   
+
+```{r dim all_subjects}
+## get the dimensions of the dataset
+o <- dim(all_subjects)[1]
+v <- dim(all_subjects)[2]
+```
+
+There are `r o` rows and `r v` variables in the `all_subjects` data table.  
+
+A view of a sample of the `all_subjects` data table: 
+
+```{r head all_subjects}
+t <- head(sample_n(all_subjects, 48), 10)
+
+pander(t, split.table = "Inf", style = 'rmarkdown')
+```
+
+The `all_subjects` data table appears to contains all of the experiment's testing data and some training data.  
+
+The variable classes and data types in the `all_subjects` table are:
+
+```{r classes all_subjects}
+## inspect the classes of the dataset
+t <- tidy(sapply(all_subjects, class))
+names(t) <- c("Variable", "Data type")
+          
+pander(t,
+       justify = c('left', 'left'), 
+       style = 'rmarkdown')
+```
+
+The `all_subjects` data table appears to be in a tidy data format with one row per subject (observation), one value per cell, and each variable has its own column.  
+However, there are issues the table that do not conform to the tidy data format.  Specifically:   
+
+1. The table contains training and testing data, even though there is a separate table for training data.  A new `testing_dat` table should be formed with only data pertaining to the testing phase of the experiment, i.e., that portion of the experiment conducted after the treatments were administered.   
+
+2. Inconsistent naming scheme (e.g. "Training A" v "Testing Freezing A")   
+
+3. Spaces between multi-word names (e.g. "Testing Freezing A")  
+
+4. "CSCL10" should be "CXCL10"   
+
+5. Hyphens in the cytokine variables (e.g. "IL-1B" should be "IL1b")   
+
+6. Extra unnecessary words (e.g. "% total Arc")   
+
+7. Variables should not begin with a special character like '%'    
+
+9. Lowercase is the correct syntax for variables    
+
+9. Calculated values should be removed in order to transparently and reproducibly add the variables during the data transformation step   
+
+These issues will be addressed during the "Data Wrangling" step.   
+
+
+## Data Wrangling   
+In this section the problems with the imported data are addressed and a tidy data set is generated from each of the imported data worksheets.   
+
+### Reconcile rat groups between data tables
+
+The experiment represented in the imported data tables is compiled from the same experiment ran at two different times (02/2014 and 04/2014).  While both the `training_dat` and `all_subjects` tables contain rats from both experimental instances, they contain different numbers of rats.  In addition, the form of the rat identifier is different between the tables.  
+
+First, we modify the rat identifiers in the `all_subjects` table to match the form of rat identifier in the `training_dat` table by removing "JC" from the start of the rat identifiers.  Additionally, the column heading "Condition" is changed to "group" to facilitate downstream analysis.   
+
+```{r transform rat id all_subjects table}
+
+## remove the JC from the start of the rat identifiers
+## use the substr() function from the stringr package
+
+all_subjects$Subject <- substr(all_subjects$Subject,
+                               3, length(all_subjects$Subject))
+
+## change "Condition" to "group"
+names(all_subjects)[1] <- "group"
+
+## save the new form of the all_subjects worksheet
+save(all_subjects, file = "all_subjects_worksheet.RData")
+```
+
+Now we can determine how the groups of rats differ in the two tables.   
+First, get the group of rats from each data table:   
+
+```{r get rats}
+## get the group of rats from each data table
+all_subjects_rats <- unique(all_subjects$Subject )
+training_rats <- unique(training_dat1$Subject)
+```
+
+Second, find any rats in the `all_subjects` table that are *not* in the `training_dat1` table:   
+
+```{r rats only in all_subjects}
+## rats in all_subjects_rats, but not in training_rats
+## use setdiff from base R
+
+in_all_subj_not_in_train <- setdiff(all_subjects_rats, training_rats)
+l1 <- length(in_all_subj_not_in_train)
+```
+
+There are `r l1` rats in the `all_subjects` table that are not in the `training_dat` table.  
+
+Finally, find any rats in the `training_dat1` table that are *not* in the `all_subjects` table:   
+
+```{r rats only in training}
+## rats in training_rats, but not in all_subjects_rats
+in_train_not_in_subj <- setdiff(training_rats, all_subjects_rats)
+l2 <- length(in_train_not_in_subj)
+
+```
+
+There are `r l2` rats in the `training_dat1` table that are not in the `all_subjects` table. Meaning, that all rats in the `training_dat1` table are also in the `all_subjects` table.   
+
+We can see the data for the 6 rats in the `all_subjects` table that are not in the `training_dat1` table:   
+
+```{r view data for 6 rats}
+## use filter() from the dplyr package loaded with tidyverse
+
+t1 <- all_subjects %>%
+    filter(Subject %in% in_all_subj_not_in_train)
+pander(t1, split.table = "Inf", style = "rmarkdown")
+```
+
+From this view we can see that 2 rats in the CC group do not have training data or testing data.  These rats will be remove during the `all_subjects` data wrangling step.  Additionally, the remaining 4 rats have only limited training data.  Most importantly, the training days are missing.  Nevertheless, we will extract the "condition" "Subject", "Training A" and "Training A'" data for 4 rats to append to the `training_dat1` table.   
+
+Rats to be removed from the `all_subjects` table:    
+
+```{r rats to removed from all_subjects}
+## rats that will be removed from the all_subjects table
+rats_to_rm <- t1$Subject[1:2]
+save(rats_to_rm, file = "rats_to_rm.RData")
+```
+
+Rats to be appended to the `training_da1` table:   
+
+```{r rats to remove or append from all_subjects}
+## rats that will be appended, with training data, to the training table
+rats_to_append <- t1$Subject[3:6]
+save(rats_to_append, file = "rats_to_append.RData")
+```
+
+Extract the training data from the `all_subjects` table for the 4 identified rats:   
+
+```{r extract training data}
+## extract the training data for 4 rats
+extracted_training_dat <- t1 %>%
+    filter(Subject %in% rats_to_append ) %>%
+    select(1:4) %>%
+    arrange(Subject)
+```
+
+```{r cleanup 01, echo=FALSE, results='hide'}
+remove(l1, l2,t1, training_rats, all_subjects_rats,
+       in_all_subj_not_in_train, in_train_not_in_subj)
+```
+
+
+### Generate a tidy training data set   
+In this section a tidy form of the training data set is generated and then the training data extracted from the `all_subjects` table is added to produce the final training data set.   
+
+#### Tidy data formatting of `training_dat1` data table   
+
+Here, the issue identified during the inspection of the `training_dat1` table are addressed.  Functions from the `dplyr`, `tidyr` and `stringr` libraries are used to generate a tidy training data set for exploratory analysis.  
+
+First, take care of small items including: adding a column heading, removing a column, and rounding numeric values to 3 decimal places.   
+
+```{r handle small training data issues}
+## give the third column a name and change "Subject" to "rat", change "Condition" to treatment
+names(training_dat1)[1:3] <- c("group", "rat", "context")
+
+## remove the "Days of Training" column
+training_dat1 <- select(training_dat1, 1:18)
+
+## round numeric values to 3 decimal places
+training_dat1[,4:18 ] <- round(training_dat1[,4:18 ], 3)
+```
+
+Next, use the `gather()` function of the `tidyr` package to extract the freezing values for each context on each training day.  The freezing values are stored as column values in columns 4-18. The values for context (A or A') are stored in column 2.  
+
+1. For context A and A' the `training_dat1` table filter for data where the context variable is *A (S+)* or *A'* respectively.  
+
+2. The percent freezing values are gathered from the values stored in the columns into a single new column (variable) called "training_A" or "training_A'".   
+
+3. Training day values are gathered from the column headings into a single new column called "training_day_temp".   
+
+4. Data for context A is stored in a temporary table called `conA1`.  The data for context A' is is stored in a temporary table called `conA2`.   
+
+5. The data tables `conA1` and `conA2` are merged together on the combination of the "rat", "training_day_temp", and "group" columns.  
+
+```{r gather freezing values by context}
+## generate a tidy dataset for context A for each training day 
+## use filter() from dplyr and gather() from tidyr
+conA1 <- training_dat1 %>%
+    filter(context == "A (S+)") %>%
+    gather(`D1 (A'A)`:D15, 
+           key = "training_day_temp", 
+           value = "training_A",
+           na.rm = TRUE) %>%
+    arrange(rat)
+    
+
+## generate a tidy dataset for context A' for each training day 
+conA2 <- training_dat1 %>%
+    filter(context == "A'") %>%
+    gather(`D1 (A'A)`:D15, 
+           key = "training_day_temp", 
+           value = "training_A'",
+           na.rm = TRUE) %>%
+    arrange(rat)
+
+## join the two tidy datasets together using inner_join from dplyr
+training_dat <- inner_join(conA1, conA2,
+                            by = c("rat", "training_day_temp",
+                                   "group"))
+
+## remove the obslete "context.x" and "context.y" columns
+training_dat <- select(training_dat,
+                        -context.x,
+                        -context.y)
+```
+
+Next, the integer values for training day can be extract from the values in the "training_day_temp" column using the `str_extract()` function in the `stringr` package. The extracted values are stored in a new column called "training_day".   
+
+```{r extract training_day values}
+## add a integer variable for training day
+training_dat <- mutate(training_dat,
+                        training_day = 
+                            as.integer(str_extract(training_day_temp,
+                            pattern = "[0-9]+")))
+
+```
+
+Finally, the "context_order" for each training day can be extracted from the values in the "training_day_temp" column using the `str_extract()` and a conditional `ifelse()` statement.  If the value contains a sub-string pattern beginning with "A", the context_order value is set to "AA'", otherwise the value is set to "A'A".  The "training_day_temp" column is then removed.   
+
+```{r extract context_order by day}
+## use mutate() from dplyr to add a variable for the context order for each training day. 
+## set to either AA'or A'A
+training_dat <- mutate(training_dat,
+                        context_order =
+                            ifelse(str_extract(training_day_temp,
+                                    pattern = "A+" ) == "AA",
+                                "AA'", "A'A"))
+
+## remove old columns and reorder columns
+training_dat <- select(training_dat, 2, 1, 6:7, 4:5)
+                      
+## save the long (untidy form) of training_dat1
+save(training_dat1, file = "original_training_data.RData")
+```
+
+```{r cleanup 03, echo=FALSE, results='hide'}
+## remove conA1, conA2, and training_dat1 tables
+remove(conA1, conA2, training_dat1)
+```
+
+#### Append missing training data to the `training_dat` table   
+
+Now the training data extracted from the `all_subjects` table for 4 rats can be appended to the tidy `training_dat` table.   
+
+```{r append training data, eval=FALSE}
+
+## change names of variables in the extracted data table to match the names in the training_dat table
+names(extracted_training_dat)[2:4] <- c("rat", 
+                                   "training_A", "training_A'")
+
+## append the rows in the extracted_training_dat table to the training_dat table
+training_dat <- bind_rows(training_dat,
+                           extracted_training_dat)
+```
+
+
+```{r cleanup 04, echo=FALSE, results='hide'}
+remove(extracted_training_dat)
+```
+
+#### Imputation of missing final training day values   
+
+The training data for the 4 additional rats is incomplete in that only the freezing data for context A and A' for, presumably, the final day is available. Because the actual integer value of the final training day is important for downstream analysis, the values will be imputed using animals in the same study.  All 4 rats are from the 14x04 study; so the final training day values from the 14x04 rats will be used.  
+The method of imputation should take into account the values in the "training_A" and "training_A'" variables.  Thus, we look at the training days corresponding to values of "training_A" within 5 percentages, and values of "training_A'" that are within 3 percentages of the values for each rat and impute the missing training day as the median of the training days.   
+
+First, generate a sub-table with training data for rats in the 14x04 study:   
+
+```{r ranking freezing for 14x04 rats}
+train_dat_14x04_rats <- training_dat %>% 
+    filter(str_detect(rat, "14x04")) %>% 
+    arrange(training_A, `training_A'`)
+```
+
+Next, impute the missing final training day values from existing 14x04 study data:   
+
+```{r impute missing final training day vals }
+
+for(r in rats_to_append){
+    
+    ## get the context A freezing value for the rat (r)
+    rA1 <- train_dat_14x04_rats$training_A[
+    train_dat_14x04_rats$rat == r]
+    
+    ## get the context A' freezing value for the rat
+    rA2 <- train_dat_14x04_rats$`training_A'`[
+    train_dat_14x04_rats$rat == r]
+    
+    ## get the training day values corresponding to context freezing values within 5 percentage points of the above freezing values
+    tdays <-  train_dat_14x04_rats %>%
+        filter(
+            ## training_A values +/- 5 
+            training_A >= rA1-5,
+            training_A <= rA1+5,
+            
+            ## training_A' values +/- 3
+            `training_A'` >= rA2-3,
+            `training_A'` <=`rA2`+3) %>%
+        
+        ## select training_day
+        select(training_day)
+        
+    ## set the training_day value in the training_dat table
+    training_dat$training_day[training_dat$rat== r] <-
+    round(median(tdays$training_day, na.rm = TRUE),0)
+    
+}
+
+t <- filter(training_dat, rat %in% rats_to_append)
+pander(t, style = "rmarkdown", split.table = "Inf",
+       justify = c(rep('center',4), rep('left', 2)))
+
+```
+
+Interestingly, all the missing training day values are imputed to 6 or 7.   
+
+
+```{r cleanup 05, echo=FALSE, results='hide'}
+remove(t, o, r, rA1, rA2, v, tdays)
+```
+
+
+#### Imputation of missing "context_order" values  
+Missing values for `context_order` may be imputed from the existing data if the context order each day was the same for all the rats.  Studies 14x02 and 14x04 will be examined separately, because the context order by day may be different between studies.   
+
+First, we need to determine if the context order was set each day and used for all rats trained on that day.  We can examine the data by study by adding a "study" variable to the`training_dat` table using a conditional `ifelse()` statement.  If the rat identifier starts with "14x02" the "study" variable is set to "14x02", otherwise, the variable is set to "14x04".   
+
+```{r add study var to training data}
+
+training_dat <- training_dat %>%
+    ## add study variable
+    mutate(study =
+               
+               ifelse(str_detect(rat, "14x02"),
+                 ## set to 14x02 if rat id starts with 14x02
+                 "14x02",
+                 
+                 ## set to 14x04 if rat id starts with 14x04
+                 "14x04"
+                 )
+               )
+```
+
+Examine context order per day, for each study:   
+
+```{r context order by day}
+
+t <- training_dat %>%
+    ## by study
+    group_by(study) %>%
+    
+    ## select training_day and context_order
+    select(study, training_day, context_order) %>%
+    
+    ## get distinct rows
+    distinct(training_day, context_order)
+    
+## take a look:
+pander(t, style = "rmarkdown",
+       set.caption = "Context order by study and training day",
+       caption.placement = "top"
+       )
+```
+
+Upon examining the "Context order by study and training day" table, it is clear that the context order used was the same in both studies.  However, the data is missing for training days 11-15 for the 14x02 study and study 14x04 has only 9 training days. So, the missing "context_order" values can be set for the 14x04 study, but not for the 14x02 study.  
+
+```{r impute context order}
+
+## generate a lookup (named) vector for training days and context order
+tdays <- t$training_day[t$study == "14x04" &
+           !is.na(t$context_order)]
+
+context_order <- t$context_order[t$study == "14x04" &
+           !is.na(t$context_order)]
+
+names(context_order) <- tdays
+
+## vector of 14x04 rats with missing context_order values
+r_14x04 <- unique(training_dat$rat[training_dat$study=="14x04" &
+        is.na(training_dat$context_order)])  
+
+
+for(r in r_14x04){
+    
+    ## get training day
+    d <- training_dat$training_day[training_dat$rat==r]
+    
+    ## look up context order for d using lookup vector
+    training_dat$context_order[
+        training_dat$rat==r &
+            training_dat$training_day==d] <-
+        context_order[d]
+}
+```
+
+Save the tidy form of the training data set   
+
+```{r save tidy training ds}
+save(training_dat, file = "tidy_training_dat.RData")
+```
+
+
+```{r cleanup 06, echo=FALSE, results='hide'}
+remove(t, context_order, d, r, 
+       r_14x04, tdays, train_dat_14x04_rats)
+```
+
+### Inspection of tidy format of `training_dat`   
+
+Finally, we can inspect the final tidy `training_dat` data set:
+
+Dimensions:   
+```{r dim training_dat}
+## get the dimensions of the dataset
+o <- dim(training_dat)[1]
+v <- dim(training_dat)[2]
+```
+
+There are `r o` rows and `r v` variables in the tidy `training_dat` data table.  
+
+The first 10 rows of the `training_dat` data table:   
+
+```{r head training_dat}
+t2 <- head(training_dat,10)
+pander(t2, split.table = "Inf")
+```
+
+The structure of the tidy `training_dat` data table:   
+```{r glimpse training_dat}
+glimpse(training_dat)
+
+```
+
+And, a summary of the distribution of context-freezing values and training day values:   
+```{r summary training_dat}
+summary(training_dat[c(3,5:6)])
+```
+
+```{r load training_dat table, echo=FALSE, eval=FALSE}
+load(file = "tidy_training_data.RData")
+```
+
+***   
+### Generate a tidy testing data set   
+
+Here, the issue identified during the inspection of the `all_subjects` table are addressed.  Functions from the `dplyr`, `tidyr` and `stringr` libraries are used to generate a tidy testing data set for exploratory analysis.  
+
+First, select columns from the `all_subjects` table that contain testing data and exclude calculated values and training data:   
+
+```{r select cols from all_subjects}
+testing_dat <- all_subjects %>%
+    select(1:2, 6:7, 9:16, 18:19)
+save(testing_dat, file = "nontidy_tresting_dat.RData")
+```
+
+Next, the variables can be renamed into a consistent standard format using the `names()` function.  
+
+The data stored in the "% Total Arc", "% Total H1a", and "%dbl" are percent values that represent the observed proportions for each class of neurons for each rat.  So, the variables can be named "p(Arc)", "p(H1a)", "p(dbl)" respectively.    
+
+```{r rename vars in testing_dat}
+## create a vector of new variable names
+new <- c("group", "rat","testing_A", 
+         "testing_A'", "IL1b", 
+         "IL6", "TNF", "BDNF",
+         "CXCL10", "p(Arc)", "p(H1a)",
+         "p(dbl)", "total_cells", "temp")
+
+## replace old variable names with the new variable names
+names(testing_dat) <- new
+```
+
+Finally, the rats with missing data are removed from the `testing_dat` table:   
+
+```{r rm rats from testing_dat}
+## use %!in% from the operator.tools library
+testing_dat <- testing_dat %>%
+    filter(rat %!in% rats_to_rm)
+```
+
+Save the tidy form of the `testing_dat` table:   
+
+```{r save tidy testing_dat}
+## save the tidy format of the `testing_dat` data table
+save(testing_dat, file = "tidy_testing_data.RData")
+```
+
+```{r cleanup 07, echo=FALSE, results='hide'}
+remove(t, o, v, all_subjects, new, rats_to_rm)
+```
+
+### Inspection of tidy format of `testing_dat`   
+
+Finally, we can inspect the final tidy `testing_dat` data set:
+
+Dimensions:   
+```{r dim testing_dat}
+## get the dimensions of the dataset
+o <- dim(testing_dat)[1]
+v <- dim(testing_dat)[2]
+```
+
+There are `r o` rows and `r v` variables in the tidy `testing_dat` data table.  
+
+The first 10 rows of the `testing_dat` data table:   
+
+```{r head testing_dat}
+t2 <- head(testing_dat,10)
+pander(t2, split.table = "Inf")
+```
+
+The structure of the tidy `testing_dat` data table:   
+```{r glimpse testing_dat}
+glimpse(testing_dat)
+```
+
+And, a summary of the distribution of context-freezing values, cytokine values, cell activity values and temperatures:   
+
+```{r summary testing_dat}
+summary(testing_dat[c(3:14)])
+```
+
+
+## Data Transformation   
+In this section summary statistics are calculated and added to the appropriate tables.  New tables are generated to facilitate data exploration and analysis.
+
+
+### Testing data   
+Rats were divided into 4 treatment groups: 
+1.  Saline-Saline (SAL-SAL)  
+2.  Minocycline-Saline (MIN-SAL)  
+3.  Saline-LPS (SAL-LPS)  
+4.  Minocycline-LPS (MIN-LPS)   
+After treatment the rats were tested in the context discrimination conditioning task they learned during the training portion of the experiment.  The context order for all rats was 3 min 20s in A' (Epoch 1) and 5 min in A (Epoch 2).  The context exposures were separated by 22 minutes and there was no footshock in context A.  
+
+Similar to the training data, a discrimination ratio is calculated for each rat based on the percent freezing in context A and A'.   
+
+#### Add Discrimination Ratio variable to the testing data
+The discrimination ratio (DR) will be calculated using the same formula from the training data section.   
+
+```{r add DR variable testing data}
+## add the DR variable to the testing_dat table
+testing_dat <- testing_dat %>%
+    mutate(testing_DR = (testing_A - `testing_A'`)/
+               (testing_A + `testing_A'`))
+
+## round to 3 decimal places
+testing_dat[,"testing_DR"] <- round(testing_dat[,"testing_DR"],3)
+
+## reorder the columns
+testing_dat <- testing_dat %>%
+    select(rat, group:`testing_A'`, testing_DR,
+           IL1b:temp)
+```
+
+Here is a view of 15 random rows from the new `testing_dat` table:  
+
+```{r view testing_dat with DR }
+## view random rows of the testing_dat table
+
+set.seed(563)
+t <- head(sample_n(testing_dat, 46), 15)
+pander(t,
+       caption = "testing_dat table",
+       caption.placement = "top",
+       digits = 3, style = 'rmarkdown', split.table = "Inf")
+```
+
+#### Add the "freezing_criteria" variable to the testing data  
+
+Similar to the training sessions, a rat has a successful context discrimination testing session if freezing in A is >=25 **AND** freezing in A' is <=10.  Here the variable "freezing_criteria" is added for each rat to indicate whether a the rat met the context freezing criteria for the testing session.  A "freezing_criteria" of 'y' indicates that the freezing criterion for both context A and context A' were met, a value of 'n' indicates that the freezing criteria were not met.   
+
+```{r add freezing_criterion variable to testing}
+## condition for sucessful freezing event
+freeze_con <- testing_dat$testing_A >= 25 & testing_dat$`testing_A'`<=10 
+
+## Add the variable
+testing_dat$freezing_criteria <- ifelse(freeze_con, "y", "n")
+
+## reorder columns
+testing_dat <- testing_dat %>%
+    select(rat, group:testing_DR, freezing_criteria,
+           IL1b:temp)
+```
+
+Here is a view of 15 random rows from the new `testing_dat` table:  
+
+```{r view testing_dat with DR }
+## view random rows of the testing_dat table
+
+set.seed(563)
+t <- head(sample_n(testing_dat, 46), 15)
+pander(t,
+       caption = "testing_dat table",
+       caption.placement = "top",
+       digits = 3, style = 'rmarkdown', split.table = "Inf")
+```
+
+#### Add the similarity score variable to the testing data   
+
+Neural circuit activity is visualize by imaging cells (neurons) after processing for specific neuronal activity markers called immediate early genes (IEGs).  This method is known as IEG neuronal imaging.  Neuronal activity is assessed by counting the number of neurons that are positive for the Arc IEG, the H1a IEG or for both IEGs (dbl).  Epoch 1 neuronal activity is t
+
+
+Also, cytokine levels and neuronal activity was measured in the dorsal hippocampus of each rat.
+
+#### Summary tables for the training data
+ 
+Now for each training day we can look at:   
+    1. the number of rats that meet all the criteria for context discrimination conditioning (num_cdc)  
+    2. the running total of rats that meet all the criteria for context discrimination conditioning (total_cdc)   
+    3. the running total of rats that have not met the criteria for context discrimination conditioning (total_nd)   
+    4. the running total of rats that are over criteria total_oc)
+
+##### Summary of context discrimination conditioning training by day   
+Here is the training data summary by training day, regardless of group assignment.   
+
+```{r cd_by_day, cache=TRUE}
+cd_by_day <- training_dat %>%
+    group_by(training_day) %>%
+    summarise(num_cdc = sum(context_discrim == "cd"),
+              num_oc = sum(context_discrim == "oc")) %>%
+    mutate(
+        total_nd = length(unique(training_dat$rat)) - cumsum(num_cdc),
+        total_cdc = cumsum(num_cdc),
+        total_oc = cumsum(num_oc) 
+           ) %>%
+    select(training_day, num_cdc, total_cdc, total_nd, total_oc) %>%
+    arrange(training_day)
+
+
+save(cd_by_day, file = "cdc_by_day.RData")
+```
+
+##### Summary of context discrimination conditioning training by day and group   
+Here is the training data summary by training day for each treatment group.   
+
+
+```{r cd_by_day_grp, cache=TRUE}
+cd_by_day_grp <- training_dat %>%
+    group_by(group, training_day) %>%
+    summarise(num_cdc = sum(context_discrim == "cd"),
+              num_oc = sum(context_discrim == "oc")) %>%
+    cd_by_day_grp %>%
+    summarise(total_cdc = cumsum(num_cdc),
+              total_oc = cumsum(num_oc)
+        ) %>%
+    select(training_day, group, num_cdc, total_cdc, total_oc) %>%
+    arrange(training_day)
+
+
+save(cd_by_day_grp, file = "cdc_by_day_group.RData")
+```
+
+
+
+
+
+```{r cd_by_day summary table, echo=FALSE}
+t <- cd_by_day
+t <- select(t, training_day, num_CDC, total_CDC, total_ND, num_OC, total_OC)
+names(t) <- c("Training day",
+    "# of CDC rats/day", 
+    "Total # of CDC rats",
+    "Total # of ND rats",
+    "# of OC rats/day", 
+    "Total # of ODC rats"
+)
+
+
+pander(t, 
+       caption = "Summary of Context Discrimination Conditioning Training", 
+       caption.placement = "top",
+       split.table = "Inf",style = "rmarkdown" 
+       )
+```
+
+
+This summary table shows that at the end of training (day 15), 35 rats fulfilled all the criteria for context discrimination conditioning, 7 rats were non-discriminators, and 2 rats were trained for 1 day past the day all criteria were met.   
+
+##### Summary of context discrimination conditioning training by day and group   
+Here is the training data summary by training day, taking into account group assignment.   
+
+
+```{r cd_by_day and group, cache=TRUE}
+
+cd_by_day_group <- training_dat %>%
+    group_by(group, training_day) %>%
+    summarise(
+        num_CDC = sum(context_discrim == "cd"),
+        num_OC = sum(context_discrim == "oc")
+              )
+        
+## use gather
+       
+cd_by_day_CC <- cd_by_day_group %>%
+    filter(group == "CC") %>%
+    gather(`D1 (A'A)`:D15, 
+           key = "training_day_temp", 
+           value = "training_A",
+           na.rm = TRUE) %>%
+    arrange(rat)       
+        
+         
+    mutate(total_CDC = cumsum(num_CDC),
+           total_ND = length(unique(training_dat$rat)) - cumsum(num_CDC),
+           total_OC = cumsum(num_OC) 
+           ) %>%
+    arrange(training_day)
+
+
+save(cd_by_day_group, file = "cdc_by_day_and_group.RData")
+```
+
+```{r}
+by_group <- group_by(training_dat,
+                     group, training_day)
+
+cd_by_day <- training_dat %>%
+    group_by(group, training_day) %>%
+    summarise(
+        num_CDC = sum(context_discrim == "cd"),
+        num_OC = sum(context_discrim == "oc")
+              ) %>%
+    
+    
+    mutate(total_CDC = cumsum(num_CDC),
+           total_ND = length(unique(training_dat$rat)) - cumsum(num_CDC),
+           total_OC = cumsum(num_OC) 
+           ) %>%
+    arrange(training_day)
+
+```
+
+
+
+
+
+
+```{r cd_by_day and group summary table, echo=FALSE}
+t <- cd_by_day_group
+t <- select(t, training_day, num_CDC, total_CDC, total_ND, num_OC, total_OC)
+names(t) <- c("Training day",
+    "# of CDC rats/day", 
+    "Total # of CDC rats",
+    "Total # of ND rats",
+    "# of OC rats/day", 
+    "Total # of ODC rats"
+)
+
+
+pander(t, 
+       caption = "Summary of Context Discrimination Conditioning Training", 
+       caption.placement = "top",
+       split.table = "Inf",style = "rmarkdown" 
+       )
+```
+
+
+
+```{r cleanup 11, echo=FALSE, results='hide'}
+remove(days, i, j, r, t)
+```
+
+### Compile training and testing data   
+In this section a compilation of the training and testing data is generated from the `all_subjects` and `training_dat` tables.   
+
+#### Compile training data for analysis   
+
+sub-table of training data with just the data from either the final training day or the day at which all criteria for context discrimination conditioning was fulfilled (`day_to_criteria`)   
+
+
+```{r day to criteria}
+## compile training data for all cd rats
+
+compiled_training_dat1 <- training_dat %>%
+    filter(context_discrim == "cd") %>%
+    select(-freezing_criteria) %>%
+    arrange(rat)
+
+## compile training data for all nd rats   
+nd_rats <- append(nd_rats, "14x02_08")
+compiled_training_dat <- training_dat %>%
+    select(-freezing_criteria) %>%
+    group_by(rat) %>%
+    filter(rat %in% nd_rats,
+           training_day == max(training_day)) %>%
+    arrange(rat)
+
+## combine compiled training data into 1 table
+compiled_training_dat <- bind_rows(compiled_training_dat1,
+                                   compiled_training_dat)
+compiled_training_dat <- arrange(compiled_training_dat, rat)
+
+save(compiled_training_dat, file = "compiled_training_data.RData")
+```
+
+
+```{r cleanup 12, echo=FALSE, results='hide'}
+remove(compiled_training_dat1, compiled_training_dat,
+       cd_rats, nd_rats)
+```
+
+#### Add probability variables   
+In this section the following probability variables are added to both tables:    
+    1. probability of meeting
+
+
+
+
+
+
+
+#### R session information:
+```{r session info, echo=FALSE}
+devtools::session_info(
+    c("tidyverse", "readxl", "broom", "stringr",
+    "rmarkdown", "knitr", "pander", "operator.tools"))
+
+```
