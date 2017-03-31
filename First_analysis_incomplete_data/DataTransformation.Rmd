@@ -339,6 +339,40 @@ save(training_dat, file = "tidy_transform_training_data.RData")
 ```
 
 ***
+#### Add the "freezing_criteria" variable to the testing data  
+
+Similar to the training sessions, a rat has a successful context discrimination testing session if freezing in A is >=25 **AND** freezing in A' is <=10.  Here the variable "freezing_criteria" is added for each rat to indicate whether a the rat met the context freezing criteria for the testing session.  A "freezing_criteria" of 'y' indicates that the freezing criterion for both context A and context A' were met, a value of 'n' indicates that the freezing criteria were not met.   
+
+```{r add freezing_criterion variable to testing}
+## condition for sucessful freezing event
+freeze_con <- testing_dat$testing_A >= 25 & testing_dat$`testing_A'`<=10 
+
+## Add the variable
+testing_dat$freezing_criteria <- ifelse(freeze_con, "y", "n")
+
+## reorder columns
+testing_dat <- testing_dat %>%
+    select(rat, group:testing_DR, freezing_criteria,
+           IL1b:temp)
+```
+
+Here is a view of 15 random rows from the new `testing_dat` table:  
+
+```{r view testing_dat with DR }
+## view random rows of the testing_dat table
+
+set.seed(563)
+t <- head(sample_n(testing_dat, 46), 15)
+pander(t,
+       caption = "testing_dat table",
+       caption.placement = "top",
+       digits = 3, style = 'rmarkdown', split.table = "Inf")
+```
+
+#### Add the similarity score variable to the testing data   
+
+Neural circuit activity is visualize by imaging cells (neurons) after processing for specific neuronal activity markers called immediate early genes (IEGs).  This method is known as IEG neuronal imaging.  Neuronal activity is assessed by counting the number of neurons that are positive for the Arc IEG, the H1a IEG or for both IEGs (dbl).  Epoch 1 neuronal activity is t
+
 
 
 
