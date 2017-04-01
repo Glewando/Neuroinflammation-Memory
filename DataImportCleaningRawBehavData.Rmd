@@ -1,13 +1,13 @@
 ---
-title: "Neuroinflammation effect on context discrimination memory: Data Import and Cleaning of raw training and testing behavioral data"
+title: 'Neuroinflammation effect on context discrimination memory: Data Import and
+  Cleaning of raw training and testing behavioral data'
 author: "G. Lewandowski"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: 
-  html_document:
-    toc: yes
+date: March 31, 2017
+output:
   pdf_document:
     toc: yes
-    
+  html_document:
+    toc: yes
 ---
 
 ```{r setup, include=FALSE}
