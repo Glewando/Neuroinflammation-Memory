@@ -3,10 +3,7 @@ title: "Neuroinflammation effect on context discrimination memory: Data Import a
 author: "G. Lewandowski"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
-  html_document: 
-    fig_caption: yes
-    float_toc: yes
-    theme: journal
+  html_document:
     toc: yes
   pdf_document:
     toc: yes
@@ -22,7 +19,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Document Introduction   
 
-In this document the raw behavioral training and testing data for experiments 14x02 and 14x04 are imported. The imported data will be converted (if needed) to a long (tidy) data form.  The data will be compiled such that there is one behavioral training dataset and one behavioral testing dataset.   
+In this document the raw behavioral training and testing data for experiments 14x02 and 14x04 are imported. The imported data will be converted (if needed) to a tidy data form.  The data will be compiled such that there is one behavioral training dataset and one behavioral testing dataset.   
 Notably, for each dataset observation is synonymous with row and variable is synonymous with column.  Most frequently, variable will be used instead of column.   
 
 ## Contextual Discrimination Conditioning overview   
@@ -33,7 +30,19 @@ For CDC training: on each training day the rats were place in each context for 3
 
 For CDC testing: The testing data consist of one session in which the rats spent 3min 20s in context A' and then 5 min in context A.  Again freezing (in seconds) was recorded for each minute interval.   
 
-Load R packages required for data import and cleaning:
+## Load R packages required for data import and cleaning   
+
+```{r load libraries1, eval=FALSE}
+suppressMessages({
+    library(rmarkdown)  ## render markdown docs (output)
+    library(knitr)  ## knit markdown docs (output)
+    library(readxl) ## read MS Excel worksheets into data tables
+    library(pander)  ## generate tables in output
+    library(broom) ## 'tidy()' summary output into a data frame
+    library(stringr)  ## use substr() to extract info
+    library(tidyverse)  ## data wrangling: dplyr, tidyr
+})
+```
 
 ```{r load libraries, echo=FALSE, results='hide'}
 suppressMessages({
@@ -48,7 +57,8 @@ suppressMessages({
 ```
 
 ## Data Import   
-The behavioral data for 14x02 is contained in two worksheets within a Microsoft Excel workbook. Likewise, the behavioral data for 14x02 is contained in two worksheets within a Microsoft Excel workbook. In this step the data is imported from the Excel workbook into data tables.  Additionally, the context order for the training days (both 14x02 and 14x04) is stored in a worksheet in the 14x04 workbook.
+The behavioral data for 14x02 is contained in two worksheets within a Microsoft Excel workbook. Likewise, the behavioral data for 14x04 is contained in two worksheets within a Microsoft Excel workbook. The 14x04 workbook also contains the context order for the training days (both 14x02 and 14x04).  Finally, an additional workbook contains the treatment group assignments for the rats in both studies.   
+In this step the data is imported from the Excel workbook into data tables.  
 
 ```{r file path to behavioral data}
 ## path to 14x02 Excel workbook with experiment data (base R)
@@ -97,10 +107,6 @@ train_14x02 <- read_excel(path = path_14x02,
 test_14x02 <- read_excel(path = path_14x02,
                               sheet = "Test Day",
                               na = "")
-
-## save imported worksheets as RData objects
-save(train_14x02, file = "original_14x02_train_dat.RData")
-save(test_14x02, file = "original_14x02_test_dat.RData")
 ```
 
 ### Import 14x04 behavioral data   
@@ -124,23 +130,25 @@ context_order <- read_excel(path = path_14x04,
                               sheet = "context_order",
                               na = "")
 
-## save imported worksheets as RData objects
-save(train_14x04, file = "original_14x04_train_dat.RData")
-save(test_14x04, file = "original_14x04_test_dat.RData")
-save(context_order, file = "context_order_for_training.RData")
 ```
 
-### Import behavioral group assingments   
+### Import behavioral group assignments   
 
 ```{r import grp assngmnts}
 ## import treatment group assignments
 grp_assigns <- read_excel(path = path_grps,
                               sheet = "group_assignment",
                               na = "")
+```
 
-## save imported worksheet as RData object
+```{r save original train and test data, echo=FALSE}
+## save imported worksheets as RData objects
+save(train_14x02, file = "original_14x02_train_dat.RData")
+save(test_14x02, file = "original_14x02_test_dat.RData")
+save(train_14x04, file = "original_14x04_train_dat.RData")
+save(test_14x04, file = "original_14x04_test_dat.RData")
+save(context_order, file = "context_order_for_training.RData")
 save(grp_assigns, file = "grp_assigns.RData")
-
 ```
 
 ```{r rm path vars, echo=FALSE, results='hide'}
@@ -172,13 +180,13 @@ glimpse(train_14x02)
 ```
   
 From this view of the 14x02 training data we see that:   
-  *  There are `r dim(train_14x02)[1]` rows and `r dim(train_14x02)[2]` variables   
-  *  The data appear to be in a long, tidy format   
-  *  Rat identifiers are stored in the "Subject" variable   
-  *  The raw freezing data of interest is in numeric variables with names containing the phrases "Min 1 sec", ".Min 2 sec", and "Min 3 sec"   
-  *  The remaining numeric variables are values calculated from the raw data 
-  *  Freezing data for context A is stored in variables with names starting with "S+"   
-  *  Freezing data for context A' is stored in variables with names starting with "S-"   
+  * There are `r dim(train_14x02)[1]` rows and `r dim(train_14x02)[2]` variables   
+  * The data appear to be in a tidy format   
+  * Rat identifiers are stored in the "Subject" variable   
+  * The raw freezing data of interest is in numeric variables with names containing the phrases "Min 1 sec", ".Min 2 sec", and "Min 3 sec"   
+  * The remaining numeric variables are values calculated from the raw data 
+  * Freezing data for context A is stored in variables with names starting with "S+"   
+  * Freezing data for context A' is stored in variables with names starting with "S-"   
   
   2.  Inspection of missing values:   
 Are there rows in the 14x02 training data set that do not have **any** raw freezing data? If so, how many rows? To answer this question we look for rows in which the value for *all* the variables containing the raw freezing data are *NA* (missing).     
@@ -217,8 +225,8 @@ glimpse(train_14x04)
 ```
 
 From this view of the 14x04 training data we see that:   
-  *  There are `r dim(train_14x04)[1]` rows and `r dim(train_14x04)[2]` variables   
-  *  The data appear to be in exactly the same format as the 14x02 training data, with the same variables containing the same types of values   
+  * There are `r dim(train_14x04)[1]` rows and `r dim(train_14x04)[2]` variables   
+  * The data appear to be in exactly the same format as the 14x02 training data, with the same variables containing the same types of values   
   
   2.  Inspection of missing values:   
 Similar to our inspection of the 14x02 training data we are interested in knowing how many rows (if any) do not have any raw freezing data.  Again, we look for rows in which the value for all the variables containing the raw freezing data are "NA".     
@@ -271,7 +279,7 @@ train_14x04 <- train_14x04 %>%
 ```
 
 ### Rename training data variables   
-Some of the variable names are not in a correct syntax form.  All the variable names will be changed to more descriptive and syntaxically correct names.   
+Some of the variable names are not in a correct syntax form.  All the variable names will be changed to more descriptive and syntactically correct names.   
 
 ```{r rename train vars}
 ## set up a vector with the new variable names
@@ -359,7 +367,7 @@ train_dat <- select(train_dat,
 ### Add the treatment 'group' variable to the training dataset   
 One of the experimental objectives is to determine the effect of neuroinflammation on contextual memory.   Neuroinflammation was induced by systemic administration of lipopolysaccride (LPS).  Secondarily, to determine if LPS caused memory deficits via cytokine release by microglia, some rats were also treated with minocycline (MIN) to block microglia activation.  As a control, groups of rats were gives saline in place of either minocycline or LPS.  Thus, there were four treatment groups:   
   1.  saline-saline (SAL-SAL); control rats   
-  2.  saline-LPS (SAL-LPS); rats given saline, instead of minocyline, followed by LPS   
+  2.  saline-LPS (SAL-LPS); rats given saline, instead of minocycline, followed by LPS   
   3.  minocycline-saline (MIN-saline); rats given minocycline, followed by saline   
   4.  minocycline-LPS (MIN-LPS); rats given minocycline, followed by LPS   
   5.  caged-control (CC); rats that not treated and are not tested in the context discrimination task   
@@ -436,14 +444,14 @@ glimpse(test_14x02)
 ```
   
 From this view of the 14x02 testing data we see that:   
-  *  There are `r dim(test_14x02)[1]` rows and `r dim(test_14x02)[2]` variables   
-  *  The data appear to be in a long, tidy format   
-  *  Rat identifiers are stored in the "Subject" variable  
-  *  Rat identifiers "14x02_1", "14x02_2", "14x02_3", "14x02_5", "14x02_7", "14x02_9", should be in the form of "14x02_0#"   
-  *  The raw freezing data of interest is in numeric variables with names containing the phrases "Min n sec".  There are 5 columns with raw context A freezing data and 3 columns with raw context A' freezing data   
-  *  The remaining numeric variables are values calculated from the raw data 
-  *  Freezing data for context A is stored in variables with names starting with "S+"   
-  *  Freezing data for context A' is stored in variables with names starting with "S-"   
+  * There are `r dim(test_14x02)[1]` rows and `r dim(test_14x02)[2]` variables   
+  * The data appear to be in a tidy format   
+  * Rat identifiers are stored in the "Subject" variable  
+  * Rat identifiers "14x02_1", "14x02_2", "14x02_3", "14x02_5", "14x02_7", "14x02_9", should be in the form of "14x02_0#"   
+  * The raw freezing data of interest is in numeric variables with names containing the phrases "Min n sec".  There are 5 columns with raw context A freezing data and 3 columns with raw context A' freezing data   
+  * The remaining numeric variables are values calculated from the raw data 
+  * Freezing data for context A is stored in variables with names starting with "S+"   
+  * Freezing data for context A' is stored in variables with names starting with "S-"   
   
   2.  Inspection of missing values:   
 We will use the same procedure here as we used for the training data to determine if- and how many rows do not contain raw freezing data.       
@@ -456,10 +464,12 @@ rowSums(is.na(test_14x02[,c(2:6, 14:16)]))
 
 From this vector, we can see that observation 18 has 1 missing value.  We can take a closer look at this row.    
 ```{r test_14x02row18}
-pander(test_14x02[18,c(1:6, 14:16)])
+
+pander(test_14x02[18,c(1:6, 14:16)],
+       style = 'rmarkdown', split.table = "Inf")
 ```
 
-We can see that the only value missing is that for minute 2 of context A'.  Since, the other values for contex A' are 0, we will assume that the value of minute 2 is also 0 and will set the value to 0.   
+We can see that the only value missing is that for minute 2 of context A'.  Since, the other values for context A' are 0, we will assume that the value of minute 2 is also 0 and will set the value to 0.   
 
 ```{r test_14x02 NA to 0 }
 ## change the NA in row 18, column 15 to 0
@@ -486,10 +496,10 @@ glimpse(test_14x04)
 ```
   
 From this view of the 14x04 testing data we can see that:   
-  *  There are `r dim(test_14x04)[1]` rows and `r dim(test_14x04)[2]` variables   
-  *  The data appears to be in exactly the same format as the `test_14x02` dataset   
-  *  The variables are exactly the same as in the `test_14x02` dataset  
-  *  The dataset contains rats from both 14x04 **and** 14x02 (which will be removed)
+  * There are `r dim(test_14x04)[1]` rows and `r dim(test_14x04)[2]` variables   
+  * The data appears to be in exactly the same format as the `test_14x02` dataset   
+  * The variables are exactly the same as in the `test_14x02` dataset  
+  * The dataset contains rats from both 14x04 **and** 14x02 (which will be removed)
   
   2.  Inspection of missing values:   
 We will use the same procedure here as we used for the `test_14x02` dataset to determine if- and how many rows do not contain raw freezing data.       
@@ -518,7 +528,7 @@ test_14x04 <- test_14x04[, c(1:6,14:16)]
 ```
 
 ### Rename testing data variables   
-Some of the variable names are not in a correct syntax form.  All the variable names will be changed to more descriptive and syntaxically correct names.   
+Some of the variable names are not in a correct syntax form.  All the variable names will be changed to more descriptive and syntactically correct names.   
 
 ```{r rename testing vars}
 ## set up a vectors with the new variable names
@@ -588,7 +598,7 @@ test_14x04 <- test_14x04 %>%
 
 ```
 
-### Combine 14x02 and 14x04 training datasets
+### Combine 14x02 and 14x04 testing datasets
 
 Next, the rows of the 14x04 testing data are appended to the 14x02 testing data to generate a compile `test_dat` data table.  The variables are then reordered.   
 
@@ -640,7 +650,7 @@ glimpse(test_dat)
 
 A sample of 20 observations from the `test_dat` dataset:   
 
-```{r random rows train_dat}
+```{r random rows test_dat}
 ## view random rows of the test_dat table
 set.seed(543)
 
