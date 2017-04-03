@@ -546,7 +546,7 @@ train_14x02 &lt;-<span class="st"> </span>train_14x02 <span class="op">%&gt;%</s
 
 ## remove rows missing data from train_14x04
 train_14x04 &lt;-<span class="st"> </span>train_14x04 <span class="op">%&gt;%</span>
-<span class="st">    </span><span class="kw">filter</span>(<span class="op">!</span><span class="kw">rowSums</span>(<span class="kw">is.na</span>(train_14x04[,<span class="dv">3</span><span class="op">:</span><span class="dv">8</span>])) <span class="op">&gt;=</span><span class="st"> </span><span class="dv">5</span>)</code></pre></div>
+<span class="st">    </span><span class="kw">filter</span>(<span class="op">!</span><span class="kw">rowSums</span>(<span class="kw">is.na</span>(train_14x04[,<span class="dv">3</span><span class="op">:</span><span class="dv">8</span>])) <span class="op">==</span><span class="st"> </span><span class="dv">6</span>)</code></pre></div>
 <p>The <code>train_14x02</code> dataset now has 253 observations and the <code>train_14x04</code> dataset now has 168 observations</p>
 </div>
 <div id="add-a-study-variable-to-each-training-dataset" class="section level3">
