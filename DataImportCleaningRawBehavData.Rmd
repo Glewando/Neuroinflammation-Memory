@@ -2,18 +2,21 @@
 title: 'Neuroinflammation effect on context discrimination memory: Data Import and
   Cleaning of raw training and testing behavioral data'
 author: "G. Lewandowski"
-date: March 31, 2017
+date: "March 31, 2017"
 output:
   pdf_document:
+    highlight: tango
     toc: yes
+    toc_depth: 4
   html_document:
+    highlight: tango
+    theme: readable
     toc: yes
+    toc_depth: 4
+    toc_float: yes
 ---
 
 ```{r setup, include=FALSE}
-## get the type of document that is being rendered
-out_type <- knitr::opts_knit$get("rmarkdown.pandoc.to")
-
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -156,10 +159,10 @@ rm(path_14x02, path_14x04, path_grps)
 ```
 
 ## Initial Inspection of `grp_assigns`   
-  1.  Overview of `grp_assigns`   
+#### Overview of `grp_assigns`   
   
 ```{r glimpse grp}
-## use glimpse() from the tibble package loaded with the tidyverse package
+## use glimpse() from the tibble package (tidyverse)
 glimpse(grp_assigns)
 ```
 The `grp_assigns` looks good and does not need any further processing.   
@@ -168,27 +171,32 @@ The `grp_assigns` looks good and does not need any further processing.
 
 Here we make an initial inspection of the imported behavioral training datasets and identify issues to resolve in order to generate the corresponding tidy datasets.    
 
-### 14x02 Training Data Inspection   
-
-  1.  Overview of the train_14x02 data:
-  
+### 14x02 Training Data Inspection  
+#### Overview of the train_14x02 data:  
 ```{r glimpse train_14x02}
-## use glimpse() from the tibble package loaded with the tidyverse package
 
 ## overview of train_14x02
 glimpse(train_14x02)
 ```
   
 From this view of the 14x02 training data we see that:   
-  * There are `r dim(train_14x02)[1]` rows and `r dim(train_14x02)[2]` variables   
-  * The data appear to be in a tidy format   
-  * Rat identifiers are stored in the "Subject" variable   
-  * The raw freezing data of interest is in numeric variables with names containing the phrases "Min 1 sec", ".Min 2 sec", and "Min 3 sec"   
-  * The remaining numeric variables are values calculated from the raw data 
-  * Freezing data for context A is stored in variables with names starting with "S+"   
-  * Freezing data for context A' is stored in variables with names starting with "S-"   
-  
-  2.  Inspection of missing values:   
+
+* There are `r dim(train_14x02)[1]` rows and `r dim(train_14x02)[2]` variables   
+
+* The data appear to be in a tidy format   
+
+* Rat identifiers are stored in the "Subject" variable   
+
+* The raw freezing data of interest is in numeric variables with names containing the phrases "Min 1 sec", ".Min 2 sec", and "Min 3 sec"   
+
+* The remaining numeric variables are values calculated from the raw data 
+
+* Freezing data for context A is stored in variables with names starting with "S+"  
+
+* Freezing data for context A' is stored in variables with names starting with "S-"     
+
+
+#### Inspection of missing values:   
 Are there rows in the 14x02 training data set that do not have **any** raw freezing data? If so, how many rows? To answer this question we look for rows in which the value for *all* the variables containing the raw freezing data are *NA* (missing).     
 
 First, we can look at a vector of the number of missing raw data values for each observation.   
@@ -207,7 +215,7 @@ raw_dat <- train_14x02 %>%
     select(3,5,7,11,13,15) 
 
  num_NA_rows_14x02 <- raw_dat %>%
-    filter(rowSums(is.na(raw_dat)) >= 6) %>%
+    filter(rowSums(is.na(raw_dat)) >= 5) %>%
     summarise(num_rows = n())
 ```
 
@@ -215,20 +223,21 @@ There are `r num_NA_rows_14x02[[1,1]]` rows (observations) without any raw freez
 
 ### 14x04 Training Data Inspection   
 
-  1. Overview of the train_14x04 data:
+#### Overview of the train_14x04 data:
   
 ```{r glimpse train_14x04}
-## use glimpse() from the tibble package loaded with the tidyverse package
 
 ## overview of train_14x04
 glimpse(train_14x04)
 ```
 
 From this view of the 14x04 training data we see that:   
-  * There are `r dim(train_14x04)[1]` rows and `r dim(train_14x04)[2]` variables   
-  * The data appear to be in exactly the same format as the 14x02 training data, with the same variables containing the same types of values   
-  
-  2.  Inspection of missing values:   
+
+* There are `r dim(train_14x04)[1]` rows and `r dim(train_14x04)[2]` variables   
+
+* The data appear to be in exactly the same format as the 14x02 training data, with the same variables containing the same types of values   
+
+#### Inspection of missing values:   
 Similar to our inspection of the 14x02 training data we are interested in knowing how many rows (if any) do not have any raw freezing data.  Again, we look for rows in which the value for all the variables containing the raw freezing data are "NA".     
 
 First, we can look at a vector of the number of missing raw data values for each observation.   
@@ -294,13 +303,14 @@ names(train_14x04) <- vars
 ```
 
 We can inspect the resulting datasets:   
+
 **14x02 training data: **   
 
 ```{r glimpse new 14x02 train dat}
 glimpse(train_14x02)
 ```
 
-**14x04 training data:**   
+**14x04 training data: **   
 
 ```{r glimpse new 14x04 train dat}
 glimpse(train_14x04)
@@ -316,7 +326,7 @@ train_14x02 <- train_14x02 %>%
 
 ## remove rows missing data from train_14x04
 train_14x04 <- train_14x04 %>%
-    filter(!rowSums(is.na(train_14x04[,3:8])) >= 5)
+    filter(!rowSums(is.na(train_14x04[,3:8])) == 6)
        
 ```
 
@@ -356,8 +366,10 @@ train_dat <- select(train_dat,
 Finally, we add context order information for each training day and reorder the variables:
 
 ```{r add context order}
-## use the left_join() function from dplyr to add the context_order var and preserve the train_dat data
-train_dat <- left_join(train_dat, context_order, by = "training_day")
+## use the left_join() function from dplyr to add 
+##   the context_order var and preserve the train_dat data
+train_dat <- left_join(train_dat, context_order, 
+                       by = "training_day")
 
 ## reorder the variables
 train_dat <- select(train_dat,
@@ -375,17 +387,19 @@ One of the experimental objectives is to determine the effect of neuroinflammati
 Here the treatment group variable is added to the behavioral training data:   
 
 ```{r add grp to train dat}
-## use the left_join() function from dplyr to add the group var and preserve the train_dat data
-train_dat <- left_join(train_dat, grp_assigns, by = "rat")
+## use the left_join() function from dplyr to add 
+##    the group var and preserve the train_dat data
+train_dat <- left_join(train_dat, grp_assigns, 
+                       by = "rat")
 
 ## reorder the variables
 train_dat <- select(train_dat,
                     1,11, 2:10)
 ```
 
-### Convert training categorical variables to factor variables     
+### Convert variables to factor variables     
 
-In the tidy training dataset (`train_dat`) there are `r dim(train_dat)[1]` observations and `r dim(train_dat)[2]` variables.  To facilitate downstream data analysis, the categorical variables 'study', 'group', 'training_day' and 'context_order' are converted to factor variables:   
+In the tidy training dataset (`train_dat`) there are `r dim(train_dat)[1]` observations and `r dim(train_dat)[2]` variables.  To facilitate downstream data analysis, the variables 'study', 'group', 'training_day' and 'context_order' are converted to factor variables:   
 
 ```{r train_dat factor variables}
 ## use the mutate() function of dplyr
@@ -403,13 +417,13 @@ Overview of final form of the behavioral training data:
 glimpse(train_dat)
 ```
 
-A sample of 20 observations from the `train_dat` dataset:   
+A sample of 15 observations from the `train_dat` dataset:   
 
 ```{r random rows train_dat}
 ## view random rows of the train_dat table
 set.seed(563)
 
-pander(head(sample_n(train_dat, 421), 20),
+pander(head(sample_n(train_dat, 421), 15),
        caption = "Sample of the training data",
        caption.placement = "top",
        digits = 3, style = 'rmarkdown', split.table = "Inf")
@@ -434,26 +448,34 @@ Here we make an initial inspection of the imported behavioral testing datasets a
 
 ### 14x02 Testing Data Inspection   
 
-  1.  Overview of the test_14x02 data:
+#### Overview of the test_14x02 data:
   
-```{r glimpse test_14x02}
-## use glimpse() from the tibble package loaded with the tidyverse package
+```{r glimpse test_14x02, tidy=TRUE}
 
 ## overview of test_14x02
 glimpse(test_14x02)
 ```
   
 From this view of the 14x02 testing data we see that:   
+
   * There are `r dim(test_14x02)[1]` rows and `r dim(test_14x02)[2]` variables   
-  * The data appear to be in a tidy format   
-  * Rat identifiers are stored in the "Subject" variable  
-  * Rat identifiers "14x02_1", "14x02_2", "14x02_3", "14x02_5", "14x02_7", "14x02_9", should be in the form of "14x02_0#"   
-  * The raw freezing data of interest is in numeric variables with names containing the phrases "Min n sec".  There are 5 columns with raw context A freezing data and 3 columns with raw context A' freezing data   
-  * The remaining numeric variables are values calculated from the raw data 
-  * Freezing data for context A is stored in variables with names starting with "S+"   
-  * Freezing data for context A' is stored in variables with names starting with "S-"   
   
-  2.  Inspection of missing values:   
+  * The data appear to be in a tidy format   
+  
+  * Rat identifiers are stored in the "Subject" variable  
+  
+  * Rat identifiers "14x02_1", "14x02_2", "14x02_3", "14x02_5", "14x02_7", "14x02_9", should be in the form of "14x02_0#"   
+  
+  * The raw freezing data of interest is in numeric variables with names containing the phrases "Min n sec".  There are 5 columns with raw context A freezing data and 3 columns with raw context A' freezing data   
+  
+  * The remaining numeric variables are values calculated from the raw data  
+  
+  * Freezing data for context A is stored in variables with names starting with "S+"   
+  
+  * Freezing data for context A' is stored in variables with names starting with "S-"   
+
+
+#### Inspection of missing values:   
 We will use the same procedure here as we used for the training data to determine if- and how many rows do not contain raw freezing data.       
 
 First, we can look at a vector of the number of missing raw data values for each observation.   
@@ -486,22 +508,25 @@ Thus, the test_14x02 dataset does not have any missing values for the raw freezi
 
 ### 14x04 Testing Data Inspection   
 
-  1.  Overview of the `test_14x04` dataset:
+#### Overview of the `test_14x04` dataset:
   
 ```{r glimpse test_14x04}
-## use glimpse() from the tibble package loaded with the tidyverse package
-
 ## overview of test_14x04
 glimpse(test_14x04)
 ```
   
 From this view of the 14x04 testing data we can see that:   
+
   * There are `r dim(test_14x04)[1]` rows and `r dim(test_14x04)[2]` variables   
-  * The data appears to be in exactly the same format as the `test_14x02` dataset   
+  
+  * The data appears to be in exactly the same format as the `test_14x02` dataset  
+  
   * The variables are exactly the same as in the `test_14x02` dataset  
+  
   * The dataset contains rats from both 14x04 **and** 14x02 (which will be removed)
   
-  2.  Inspection of missing values:   
+
+#### Inspection of missing values:   
 We will use the same procedure here as we used for the `test_14x02` dataset to determine if- and how many rows do not contain raw freezing data.       
 
 We can look at a vector of the number of missing raw data values for each observation.   
@@ -567,7 +592,7 @@ We can inspect the resulting datasets:
 glimpse(test_14x02)
 ```
 
-**14x04 testing data:**   
+**14x04 testing data: **   
 
 ```{r glimpse new 14x04 test dat}
 glimpse(test_14x04)
@@ -578,6 +603,8 @@ During inspection of the 14x04 testing data it was found that the dataset also c
 
 ```{r rm 14x02 rats from 14x04}
 ## use the str_detect() function from the stringr package
+
+## filter test_14x04 for rat ids beginning with "14x04"
 test_14x04 <- test_14x04 %>%
     filter(str_detect(rat, "14x04"))
 ```
@@ -622,7 +649,8 @@ rm(vars, test_14x02, test_14x04)
 Here the treatment group variable is added to the behavioral testing data:   
 
 ```{r add grp to test dat}
-## use the left_join() function from dplyr to add the group var and preserve the test_dat data
+## use the left_join() function from dplyr to 
+##    add the group var and preserve the test_dat data
 test_dat <- left_join(test_dat, grp_assigns, by = "rat")
 
 ## reorder the variables
@@ -630,7 +658,7 @@ test_dat <- select(test_dat,
                     1,11, 2:10)
 ```
 
-### Convert testing categorical variables to factor variables     
+### Convert categorical variables to factor variables     
 
 In the tidy testing dataset (`test_dat`) there are `r dim(test_dat)[1]` observations and `r dim(test_dat)[2]` variables.  To facilitate downstream data analysis, the categorical variables 'study', and 'group' are converted to factor variables:   
 
@@ -648,13 +676,13 @@ Overview of final form of the behavioral testing data:
 glimpse(test_dat)
 ```
 
-A sample of 20 observations from the `test_dat` dataset:   
+A sample of 15 observations from the `test_dat` dataset:   
 
 ```{r random rows test_dat}
 ## view random rows of the test_dat table
 set.seed(543)
 
-pander(head(sample_n(test_dat, 42), 20),
+pander(head(sample_n(test_dat, 42), 15),
        caption = "Sample of the testing data",
        caption.placement = "top",
        digits = 3, style = 'rmarkdown', split.table = "Inf")
