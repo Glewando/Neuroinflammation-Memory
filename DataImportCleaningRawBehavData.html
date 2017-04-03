@@ -345,7 +345,7 @@ grp_assigns &lt;-<span class="st"> </span><span class="kw">read_excel</span>(<sp
 <h2>Initial Inspection of <code>grp_assigns</code></h2>
 <div id="overview-of-grp_assigns" class="section level4">
 <h4>Overview of <code>grp_assigns</code></h4>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use glimpse() from the tibble package loaded with the tidyverse package
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use glimpse() from the tibble package (tidyverse)
 <span class="kw">glimpse</span>(grp_assigns)</code></pre></div>
 <pre><code>## Observations: 48
 ## Variables: 2
@@ -361,9 +361,7 @@ grp_assigns &lt;-<span class="st"> </span><span class="kw">read_excel</span>(<sp
 <h3>14x02 Training Data Inspection</h3>
 <div id="overview-of-the-train_14x02-data" class="section level4">
 <h4>Overview of the train_14x02 data:</h4>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use glimpse() from the tibble package loaded with the tidyverse package
-
-## overview of train_14x02
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## overview of train_14x02
 <span class="kw">glimpse</span>(train_14x02)</code></pre></div>
 <pre><code>## Observations: 311
 ## Variables: 20
@@ -419,18 +417,16 @@ raw_dat &lt;-<span class="st"> </span>train_14x02 <span class="op">%&gt;%</span>
 <span class="st">    </span><span class="kw">select</span>(<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>,<span class="dv">11</span>,<span class="dv">13</span>,<span class="dv">15</span>) 
 
  num_NA_rows_14x02 &lt;-<span class="st"> </span>raw_dat <span class="op">%&gt;%</span>
-<span class="st">    </span><span class="kw">filter</span>(<span class="kw">rowSums</span>(<span class="kw">is.na</span>(raw_dat)) <span class="op">&gt;=</span><span class="st"> </span><span class="dv">6</span>) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">filter</span>(<span class="kw">rowSums</span>(<span class="kw">is.na</span>(raw_dat)) <span class="op">&gt;=</span><span class="st"> </span><span class="dv">5</span>) <span class="op">%&gt;%</span>
 <span class="st">    </span><span class="kw">summarise</span>(<span class="dt">num_rows =</span> <span class="kw">n</span>())</code></pre></div>
-<p>There are 57 rows (observations) without any raw freezing data, containing only NA values. These observations will be removed during the Data Cleaning step.</p>
+<p>There are 58 rows (observations) without any raw freezing data, containing only NA values. These observations will be removed during the Data Cleaning step.</p>
 </div>
 </div>
 <div id="x04-training-data-inspection" class="section level3">
 <h3>14x04 Training Data Inspection</h3>
 <div id="overview-of-the-train_14x04-data" class="section level4">
 <h4>Overview of the train_14x04 data:</h4>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use glimpse() from the tibble package loaded with the tidyverse package
-
-## overview of train_14x04
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## overview of train_14x04
 <span class="kw">glimpse</span>(train_14x04)</code></pre></div>
 <pre><code>## Observations: 233
 ## Variables: 20
@@ -579,8 +575,10 @@ train_dat &lt;-<span class="st"> </span><span class="kw">select</span>(train_dat
 <div id="add-a-context_order-variable-to-the-training-data" class="section level3">
 <h3>Add a ‘context_order’ variable to the training data</h3>
 <p>Finally, we add context order information for each training day and reorder the variables:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use the left_join() function from dplyr to add the context_order var and preserve the train_dat data
-train_dat &lt;-<span class="st"> </span><span class="kw">left_join</span>(train_dat, context_order, <span class="dt">by =</span> <span class="st">&quot;training_day&quot;</span>)
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use the left_join() function from dplyr to add 
+##   the context_order var and preserve the train_dat data
+train_dat &lt;-<span class="st"> </span><span class="kw">left_join</span>(train_dat, context_order, 
+                       <span class="dt">by =</span> <span class="st">&quot;training_day&quot;</span>)
 
 ## reorder the variables
 train_dat &lt;-<span class="st"> </span><span class="kw">select</span>(train_dat,
@@ -595,8 +593,10 @@ train_dat &lt;-<span class="st"> </span><span class="kw">select</span>(train_dat
 4. minocycline-LPS (MIN-LPS); rats given minocycline, followed by LPS<br />
 5. caged-control (CC); rats that not treated and are not tested in the context discrimination task</p>
 <p>Here the treatment group variable is added to the behavioral training data:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use the left_join() function from dplyr to add the group var and preserve the train_dat data
-train_dat &lt;-<span class="st"> </span><span class="kw">left_join</span>(train_dat, grp_assigns, <span class="dt">by =</span> <span class="st">&quot;rat&quot;</span>)
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use the left_join() function from dplyr to add 
+##    the group var and preserve the train_dat data
+train_dat &lt;-<span class="st"> </span><span class="kw">left_join</span>(train_dat, grp_assigns, 
+                       <span class="dt">by =</span> <span class="st">&quot;rat&quot;</span>)
 
 ## reorder the variables
 train_dat &lt;-<span class="st"> </span><span class="kw">select</span>(train_dat,
@@ -627,11 +627,11 @@ train_dat &lt;-<span class="st"> </span>train_dat <span class="op">%&gt;%</span>
 ## $ A'_min1       &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...
 ## $ A'_min2       &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...
 ## $ A'_min3       &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...</code></pre>
-<p>A sample of 20 observations from the <code>train_dat</code> dataset:</p>
+<p>A sample of 15 observations from the <code>train_dat</code> dataset:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## view random rows of the train_dat table
 <span class="kw">set.seed</span>(<span class="dv">563</span>)
 
-<span class="kw">pander</span>(<span class="kw">head</span>(<span class="kw">sample_n</span>(train_dat, <span class="dv">421</span>), <span class="dv">20</span>),
+<span class="kw">pander</span>(<span class="kw">head</span>(<span class="kw">sample_n</span>(train_dat, <span class="dv">421</span>), <span class="dv">15</span>),
        <span class="dt">caption =</span> <span class="st">&quot;Sample of the training data&quot;</span>,
        <span class="dt">caption.placement =</span> <span class="st">&quot;top&quot;</span>,
        <span class="dt">digits =</span> <span class="dv">3</span>, <span class="dt">style =</span> <span class="st">'rmarkdown'</span>, <span class="dt">split.table =</span> <span class="st">&quot;Inf&quot;</span>)</code></pre></div>
@@ -861,71 +861,6 @@ train_dat &lt;-<span class="st"> </span>train_dat <span class="op">%&gt;%</span>
 <td align="center">7</td>
 <td align="center">5</td>
 </tr>
-<tr class="even">
-<td align="center">14x04_13</td>
-<td align="center">SAL-LPS</td>
-<td align="center">14x04</td>
-<td align="center">3</td>
-<td align="center">AA’</td>
-<td align="center">23</td>
-<td align="center">14</td>
-<td align="center">28</td>
-<td align="center">31</td>
-<td align="center">12</td>
-<td align="center">29</td>
-</tr>
-<tr class="odd">
-<td align="center">14x02_19</td>
-<td align="center">CC</td>
-<td align="center">14x02</td>
-<td align="center">6</td>
-<td align="center">AA’</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-</tr>
-<tr class="even">
-<td align="center">14x04_03</td>
-<td align="center">SAL-LPS</td>
-<td align="center">14x04</td>
-<td align="center">1</td>
-<td align="center">A’A</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-</tr>
-<tr class="odd">
-<td align="center">14x04_16</td>
-<td align="center">MIN-LPS</td>
-<td align="center">14x04</td>
-<td align="center">10</td>
-<td align="center">AA’</td>
-<td align="center">3</td>
-<td align="center">17</td>
-<td align="center">32</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">2</td>
-</tr>
-<tr class="even">
-<td align="center">14x02_17</td>
-<td align="center">CC</td>
-<td align="center">14x02</td>
-<td align="center">2</td>
-<td align="center">AA’</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-</tr>
 </tbody>
 </table>
 <hr />
@@ -938,9 +873,7 @@ train_dat &lt;-<span class="st"> </span>train_dat <span class="op">%&gt;%</span>
 <h3>14x02 Testing Data Inspection</h3>
 <div id="overview-of-the-test_14x02-data" class="section level4">
 <h4>Overview of the test_14x02 data:</h4>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use glimpse() from the tibble package loaded with the tidyverse package
-
-## overview of test_14x02
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## overview of test_14x02
 <span class="kw">glimpse</span>(test_14x02)</code></pre></div>
 <pre><code>## Observations: 21
 ## Variables: 23
@@ -1040,9 +973,7 @@ test_14x02[<span class="dv">18</span>,<span class="dv">15</span>] &lt;-<span cla
 <h3>14x04 Testing Data Inspection</h3>
 <div id="overview-of-the-test_14x04-dataset" class="section level4">
 <h4>Overview of the <code>test_14x04</code> dataset:</h4>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use glimpse() from the tibble package loaded with the tidyverse package
-
-## overview of test_14x04
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## overview of test_14x04
 <span class="kw">glimpse</span>(test_14x04)</code></pre></div>
 <pre><code>## Observations: 42
 ## Variables: 23
@@ -1190,7 +1121,8 @@ test_dat &lt;-<span class="st"> </span><span class="kw">select</span>(test_dat,
 <div id="add-the-treatment-group-variable-to-the-testing-dataset" class="section level3">
 <h3>Add the treatment ‘group’ variable to the testing dataset</h3>
 <p>Here the treatment group variable is added to the behavioral testing data:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use the left_join() function from dplyr to add the group var and preserve the test_dat data
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## use the left_join() function from dplyr to 
+##    add the group var and preserve the test_dat data
 test_dat &lt;-<span class="st"> </span><span class="kw">left_join</span>(test_dat, grp_assigns, <span class="dt">by =</span> <span class="st">&quot;rat&quot;</span>)
 
 ## reorder the variables
@@ -1219,11 +1151,11 @@ test_dat &lt;-<span class="st"> </span>test_dat <span class="op">%&gt;%</span>
 ## $ A'_min1 &lt;dbl&gt; 0, 16, 2, 0, 0, 0, 5, 6, 18, 0, 3, 0, 0, 14, 18, 20, 5...
 ## $ A'_min2 &lt;dbl&gt; 3, 48, 40, 1, 0, 0, 0, 0, 24, 0, 0, 2, 4, 30, 7, 10, 4...
 ## $ A'_min3 &lt;dbl&gt; 2, 52, 21, 0, 0, 4, 2, 0, 36, 0, 0, 0, 2, 45, 24, 43, ...</code></pre>
-<p>A sample of 20 observations from the <code>test_dat</code> dataset:</p>
+<p>A sample of 15 observations from the <code>test_dat</code> dataset:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## view random rows of the test_dat table
 <span class="kw">set.seed</span>(<span class="dv">543</span>)
 
-<span class="kw">pander</span>(<span class="kw">head</span>(<span class="kw">sample_n</span>(test_dat, <span class="dv">42</span>), <span class="dv">20</span>),
+<span class="kw">pander</span>(<span class="kw">head</span>(<span class="kw">sample_n</span>(test_dat, <span class="dv">42</span>), <span class="dv">15</span>),
        <span class="dt">caption =</span> <span class="st">&quot;Sample of the testing data&quot;</span>,
        <span class="dt">caption.placement =</span> <span class="st">&quot;top&quot;</span>,
        <span class="dt">digits =</span> <span class="dv">3</span>, <span class="dt">style =</span> <span class="st">'rmarkdown'</span>, <span class="dt">split.table =</span> <span class="st">&quot;Inf&quot;</span>)</code></pre></div>
@@ -1439,71 +1371,6 @@ test_dat &lt;-<span class="st"> </span>test_dat <span class="op">%&gt;%</span>
 <td align="center">2</td>
 <td align="center">0</td>
 <td align="center">18</td>
-</tr>
-<tr class="even">
-<td align="center">14x04_03</td>
-<td align="center">SAL-LPS</td>
-<td align="center">14x04</td>
-<td align="center">22</td>
-<td align="center">42</td>
-<td align="center">35</td>
-<td align="center">51</td>
-<td align="center">53</td>
-<td align="center">29</td>
-<td align="center">10</td>
-<td align="center">27</td>
-</tr>
-<tr class="odd">
-<td align="center">14x04_13</td>
-<td align="center">SAL-LPS</td>
-<td align="center">14x04</td>
-<td align="center">20</td>
-<td align="center">21</td>
-<td align="center">36</td>
-<td align="center">43</td>
-<td align="center">42</td>
-<td align="center">22</td>
-<td align="center">51</td>
-<td align="center">51</td>
-</tr>
-<tr class="even">
-<td align="center">14x04_22</td>
-<td align="center">SAL-SAL</td>
-<td align="center">14x04</td>
-<td align="center">12</td>
-<td align="center">19</td>
-<td align="center">14</td>
-<td align="center">23</td>
-<td align="center">15</td>
-<td align="center">2</td>
-<td align="center">4</td>
-<td align="center">6</td>
-</tr>
-<tr class="odd">
-<td align="center">14x02_02</td>
-<td align="center">MIN-SAL</td>
-<td align="center">14x02</td>
-<td align="center">8</td>
-<td align="center">21</td>
-<td align="center">27</td>
-<td align="center">42</td>
-<td align="center">26</td>
-<td align="center">5</td>
-<td align="center">0</td>
-<td align="center">2</td>
-</tr>
-<tr class="even">
-<td align="center">14x04_16</td>
-<td align="center">MIN-LPS</td>
-<td align="center">14x04</td>
-<td align="center">19</td>
-<td align="center">26</td>
-<td align="center">38</td>
-<td align="center">33</td>
-<td align="center">18</td>
-<td align="center">9</td>
-<td align="center">14</td>
-<td align="center">11</td>
 </tr>
 </tbody>
 </table>
