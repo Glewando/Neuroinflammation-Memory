@@ -1,0 +1,342 @@
+---
+title: 'Neuroinflammation effect on context discrimination memory: Data Import and
+  Cleaning of qRT-PCR Data (cytokines, CXCL10 and BDNF)'
+author: "Gail Lewandowski"
+date: "April 3, 2017"
+output:
+  pdf_document:
+    highlight: tango
+    toc: yes
+    toc_depth: 4
+  html_document:
+    highlight: tango
+    theme: readable
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Document Introduction   
+In this document the raw qRT-PCR data for experiments 14x02 and 14x04 are imported. The imported data will be converted (if needed) to a tidy data form.  The data will be compiled such that there is one dataset.   
+Notably, for each dataset observation is synonymous with row and variable is synonymous with column.  Most frequently, variable will be used instead of column.   
+
+## qRT-PCR overview   
+Recently, the Guzowski lab demonstrated that systemic administration of the bacterial endotoxin lipopolysaccharide (LPS) elevates mRNA expression of the pro-inflammatory cytokines IL-1$\beta$, TNF-$\alpha$, and IL-6 in the rat brain (Czerniawski & Guzowski, 2014; Czerniawski et al., 2015).  In this experiment they used quantitative real-time polymerase chain reaction (qRT-PCR) to measure the transcript expression in the dorsal hippocampus (dHPC) of :  
+
+*  IL-1$\beta$, TNF-$\alpha$, and IL-6; pro-inflammatory cytokines 
+
+* CXCL10 chemokine;  a C-X-C motif chemokine 10 also known as Interferon gamma-induced protein 10   
+
+* BDNF (brain-derived neurotrophic factor); a nerve growth factor  
+
+Because microglia are a source of cytokine and chemokine in the brain, it is of particular interest to examine the expression of these gene transcripts in response to LPS ± minocycline.  
+
+
+## Load R packages required for data import and cleaning   
+
+```{r load libraries1, eval=FALSE}
+suppressMessages({
+    library(rmarkdown)  ## render markdown docs (output)
+    library(knitr)  ## knit markdown docs (output)
+    library(readxl) ## read MS Excel worksheets into data tables
+    library(pander)  ## generate tables in output
+    library(tidyverse)  ## data wrangling: dplyr, tidyr
+})
+```
+
+```{r load libraries, echo=FALSE, results='hide'}
+suppressMessages({
+    library(rmarkdown)  ## render markdown docs (output)
+    library(knitr)  ## knit markdown docs (output)
+    library(readxl) ## read MS Excel worksheets into data tables
+    library(pander)  ## generate tables in output
+    library(tidyverse)  ## data wrangling: dplyr, tidyr
+})
+```
+
+## Data Import   
+The cytokine/chemokine/BDNF data for 14x02 and 14x04 are contained in a worksheets within two Microsoft Excel workbooks. In this step the data are imported from the Excel workbook into data tables.  
+
+```{r file path to qRT-PCR data}
+## path to 14x02 Excel workbook with experiment data (base R)
+path_14x02 <- file.path("neuroinflam_CDC_raw_data",
+    "14x02_raw_cytokine_data.xlsx")
+
+## path to 14x04 Excel workbook with experiment data
+path_14x04 <- file.path("neuroinflam_CDC_raw_data",
+    "14x04_raw_cytokine_data.xlsx")
+```
+
+The worksheet containing the 14x02 qRT-PCR data in the Microsoft workbook is:  
+
+```{r 14x02 worksheets}
+## use the function excel_sheets() from the readxl package
+
+## list the sheets in the 14x02 Excel workbook
+excel_sheets(path_14x02)
+```
+
+The worksheet containing the 14x02 qRT-PCR data in the Microsoft workbook is:  
+
+```{r 14x04 worksheets}
+## list the sheets in the 14x04 Excel workbook
+excel_sheets(path_14x04)
+```
+
+### Import 14x02 qRT-PCR data   
+
+```{r import 14x02 qRT-PCR data}
+
+## use the read_excel() function from the readxl package
+
+## import 14x02 qRT-PCR data
+pcr_14x02 <- read_excel(path = path_14x02,
+                              sheet = "Sheet1",
+                              na = "")
+```
+
+### Import 14x04 qRT-PCR data   
+
+```{r import 14x04 qRT-PCR data}
+
+## use the read_excel() function from the readxl package
+
+## import 14x04 qRT-PCR data
+pcr_14x04 <- read_excel(path = path_14x04,
+                              sheet = "DH cytokines",
+                              na = "")
+```
+
+
+```{r save qRT-PCR data, echo=FALSE}
+## save imported worksheets as RData objects
+save(pcr_14x02, file = "original_pcr_14x02_dat.RData")
+save(pcr_14x04, file = "original_pcr_14x04_dat.RData")
+```
+
+```{r rm path vars, echo=FALSE, results='hide'}
+rm(path_14x02, path_14x04)
+```
+
+## Initial qRT-PCR Data Inspection:   
+
+Here we make an initial inspection of the imported qRT-PCR datasets and identify issues to resolve in order to generate the corresponding tidy datasets.    
+
+### 14x02 qRT-PCR Data Inspection  
+#### Overview of the `pcr_14x02` data:  
+```{r glimpse pcr_14x02}
+
+## overview of pcr_14x02
+glimpse(pcr_14x02)
+```
+  
+From this view of the 14x02 qRT-PCR data we see that:   
+
+* There are `r dim(pcr_14x02)[1]` rows and `r dim(pcr_14x02)[2]` variables   
+
+* The variables containing the raw qRT-PCR data are the 6 variables beginning with "mean CT"
+
+* The second column contains the rat identifiers, but is missing a variable name  
+
+* All variables other than the 6 identified above contain calculated variables  
+
+#### Inspection of 14x02 qRT-PCR data for missing values:   
+Are there rows in the 14x02 qRT-PCR dataset that do not have **any** raw data? If so, how many rows? To answer this question we look for rows in which the value for *all* the variables containing the raw qRT-PCR data are *NA* (missing).     
+
+First, we can look at a vector of the number of missing raw data values for each observation.   
+
+```{r pcr_14x02 NA by row }
+
+rowSums(is.na(pcr_14x02[,c(3:4,9,14,19,24)]))
+```
+We can see that there are 9 rows without data.  These observations will be removed during the Data Cleaning step.   
+
+
+### 14x04 qRT-PCR Data Inspection  
+#### Overview of the `pcr_14x04` data:  
+```{r glimpse pcr_14x04}
+
+## overview of pcr_14x04
+glimpse(pcr_14x04)
+```
+  
+From this view of the 14x04 qRT-PCR data we see that the data is not in a tidy format.  Specifics of the dataset include:   
+
+* There are `r dim(pcr_14x04)[1]` rows and `r dim(pcr_14x04)[2]` variables   
+
+* The variables containing the raw qRT-PCR data are the 6 variables beginning with "mean CT"
+
+* The first column (BASELINE) contains rat identifiers and group assignments.
+
+* All variables other than the 6 identified above contain calculated variables  
+
+#### Inspection of 14x04 qRT-PCR data for missing values:   
+Similar to the 14x02 qRT-PCR, the 14x04 qRT-PCR data can be inspected for missing values in the 6 variables containing the raw qRT-PCR data, by looking at a vector of the number of missing raw data values for each observation.   
+
+```{r pcr_14x03 NA by row }
+
+rowSums(is.na(pcr_14x04[,c(2:3,8,13,18,23)]))
+```
+We can see that there are 8 rows without data.  These observations will be removed during the Data Cleaning step.   
+
+## qRT-PCR Data Cleaning   
+In this step the identified issues in the 14x02 and 14x04 qRT-PCR data are addressed.  
+
+### Select variables containing raw qRT-PCR data  
+The dataset contains variables that contain values calculated from the raw data, rather than the raw data itself. These variables will be removed and later re-calculated during the Data Transformation step in order to maintain transparent and reproducible data analysis.   
+
+```{r qrt-pcr data select vars}
+## use the select() function of dplyr (tidyverse)
+
+## select 14x02 vars
+pcr_14x02 <- pcr_14x02[, c(2:4,9,14,19,24)] 
+
+## select 14x04 vars
+pcr_14x04 <- pcr_14x04[, c(1:3,8,13,18,23)]
+```
+ 
+### Rename pcr_14x02 variables  
+
+```{r rename pcr_14x02 vars}
+## create a vector with new variable names
+vars <- c("rat", "ave_act_ct", "ave_IL1_ct",
+          "ave_IL6_ct", "ave_TNF_ct", 
+          "ave_BDNF_ct", "ave_CXCL10_ct")
+
+## replace pcr_14x02 variable names with new names
+names(pcr_14x02) <- vars
+
+## replace pcr_14x04 variable names with new names
+names(pcr_14x04) <- vars
+```
+
+We can inspect the resulting datasets:   
+
+**14x02 qRT-PCR data: **   
+
+```{r glimpse new 14x02 qRT-PCR dat}
+glimpse(pcr_14x02)
+```
+
+**14x04 qRT-PCR data: **   
+
+```{r glimpse new 14x04 qRT-PCR dat}
+glimpse(pcr_14x04)
+```
+
+### Remove observations without qRT-PCR data   
+The rows (observations) without any qRT-PCR data do not add anything and will be removed from both the 14x02 and 14x04 datasets. Moreover, in the `pcr_14x04` data table, the "rat" variable contains group assignment values instead of rat identifiers.  The overview of the data also reveals that the corresponding observations do not contain data.  Again, these observations will be removed.    
+
+```{r rm row with missing data}
+## remove rows missing data from pcr_14x02
+pcr_14x02 <- pcr_14x02 %>%
+    filter(!rowSums(is.na(pcr_14x02[,2:7])) == 6)
+
+## remove rows missing data from pcr_14x04
+pcr_14x04 <- pcr_14x04 %>%
+    filter(!rowSums(is.na(pcr_14x04[,2:7])) == 6)
+```
+
+The `pcr_14x02` dataset now has `r dim(pcr_14x02)[1]` observations and the `pcr_14x04` dataset now has `r dim(pcr_14x04)[1]` observations   
+
+### Add a 'study' variable to each qRT-PCR dataset
+Here, we add a new variable for 'study' to each qRT-PCR dataset to distinguish the study as 14x02 or 14x04:   
+
+```{r add study var to qRT-PCR}
+## use the mutate() function of dplyr
+
+## add the study value of 14x02
+pcr_14x02 <- pcr_14x02 %>%
+    mutate(study = "14x02")
+
+## add the study value of 14x04
+pcr_14x04 <- pcr_14x04 %>%
+    mutate(study = "14x04")
+
+```
+
+### Combine 14x02 and 14x04 qRT-PCR datasets
+
+Next, the rows of the 14x04 qRT-PCR data can be appended to the 14x02 qRT-PCR data to generate a compile `pcr_dat` data table.  The variables are then reordered.   
+
+```{r append train 14x04 to 14x02}
+## use the bind_rows() function of dplyr
+pcr_dat <- bind_rows(pcr_14x02, pcr_14x04) 
+
+## reorder the variables
+pcr_dat <- select(pcr_dat,
+                    1, 8, 2:7)
+```
+
+### Add the treatment 'group' variable to the qRT-PCR dataset   
+One of the experimental objectives is to determine the effect of neuroinflammation on contextual memory.   Neuroinflammation was induced by systemic administration of lipopolysaccride (LPS).  Secondarily, to determine if LPS caused memory deficits via cytokine release by microglia, some rats were also treated with minocycline (MIN) to block microglia activation.  As a control, groups of rats were gives saline in place of either minocycline or LPS.  Thus, there were four treatment groups:   
+  1.  saline-saline (SAL-SAL); control rats   
+  2.  saline-LPS (SAL-LPS); rats given saline, instead of minocycline, followed by LPS   
+  3.  minocycline-saline (MIN-saline); rats given minocycline, followed by saline   
+  4.  minocycline-LPS (MIN-LPS); rats given minocycline, followed by LPS   
+  5.  caged-control (CC); rats that not treated and are not tested in the context discrimination task   
+  
+Here the treatment group variable is added to the behavioral training data:   
+
+```{r add grp to pcr_dat}
+## use the left_join() function from dplyr to add 
+##    the group var and preserve the pcr_dat data
+
+## load the grp_assigns data table
+load("grp_assigns.RData")
+
+
+pcr_dat <- left_join(pcr_dat, grp_assigns, 
+                       by = "rat")
+
+## reorder the variables
+pcr_dat <- select(pcr_dat,
+                    1,9, 2:8)
+```
+
+### Convert categorical variables to factor variables     
+
+In the tidy qRT-PCR dataset (`pcr_dat`) there are `r dim(pcr_dat)[1]` observations and `r dim(pcr_dat)[2]` variables.  To facilitate downstream data analysis, the categorical variables 'study', and 'group' are converted to factor variables:   
+
+```{r pcr_dat factor variables}
+## use the mutate() function of dplyr
+pcr_dat <- pcr_dat %>%
+    mutate(study = as.factor(study),
+           group = as.factor(group))
+```
+
+```{r save pcr dt, echo=FALSE}
+save(pcr_14x02, file = "tidy_pcr_14x02.RData")
+save(pcr_14x04, file = "tidy_pcr_14x04.RData")
+save(pcr_dat, file = "tidy_pcr_data.RData")
+```
+
+Overview of final form of the behavioral qRT-PCR data:   
+
+```{r final pcr_dat view}
+glimpse(pcr_dat)
+```
+
+A sample of 15 observations from the `pcr_dat` dataset:   
+
+```{r random rows pcr_dat}
+## view random rows of the test_dat table
+set.seed(842)
+
+pander(head(sample_n(pcr_dat, 48), 15),
+       caption = "Sample of the qRT-PCR data",
+       caption.placement = "top",
+       digits = 3, style = 'rmarkdown', split.table = "Inf")
+```
+
+
+## R session information:
+```{r session info, echo=FALSE}
+devtools::session_info(
+    c("tidyverse", "readxl", "rmarkdown", "knitr", "pander"))
+
+```
