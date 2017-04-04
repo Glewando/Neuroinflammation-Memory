@@ -41,8 +41,7 @@ suppressMessages({
     library(knitr)  ## knit markdown docs (output)
     library(readxl) ## read MS Excel worksheets into data tables
     library(pander)  ## generate tables in output
-    library(broom) ## 'tidy()' summary output into a data frame
-    library(stringr)  ## use substr() to extract info
+    library(stringr)  ## str_detect()
     library(tidyverse)  ## data wrangling: dplyr, tidyr
 })
 ```
@@ -53,15 +52,14 @@ suppressMessages({
     library(knitr)  ## knit markdown docs (output)
     library(readxl) ## read MS Excel worksheets into data tables
     library(pander)  ## generate tables in output
-    library(broom) ## 'tidy()' summary output into a data frame
-    library(stringr)  ## use substr() to extract info
+    library(stringr)  ## str_detect()
     library(tidyverse)  ## data wrangling: dplyr, tidyr
 })
 ```
 
 ## Data Import   
-The behavioral data for 14x02 is contained in two worksheets within a Microsoft Excel workbook. Likewise, the behavioral data for 14x04 is contained in two worksheets within a Microsoft Excel workbook. The 14x04 workbook also contains the context order for the training days (both 14x02 and 14x04).  Finally, an additional workbook contains the treatment group assignments for the rats in both studies.   
-In this step the data is imported from the Excel workbook into data tables.  
+The behavioral data for 14x02 is contained are two worksheets within a Microsoft Excel workbook. Likewise, the behavioral data for 14x04 are contained in two worksheets within a Microsoft Excel workbook. The 14x04 workbook also contains the context order for the training days (both 14x02 and 14x04).  Finally, an additional workbook contains the treatment group assignments for the rats in both studies.   
+In this step the data are imported from the Excel workbook into data tables.  
 
 ```{r file path to behavioral data}
 ## path to 14x02 Excel workbook with experiment data (base R)
@@ -197,7 +195,7 @@ From this view of the 14x02 training data we see that:
 
 
 #### Inspection of missing values:   
-Are there rows in the 14x02 training data set that do not have **any** raw freezing data? If so, how many rows? To answer this question we look for rows in which the value for *all* the variables containing the raw freezing data are *NA* (missing).     
+Are there rows in the 14x02 training dataset that do not have **any** raw freezing data? If so, how many rows? To answer this question we look for rows in which the value for *all* the variables containing the raw freezing data are *NA* (missing).     
 
 First, we can look at a vector of the number of missing raw data values for each observation.   
 
@@ -669,7 +667,6 @@ test_dat <- test_dat %>%
            group = as.factor(group))
 ```
 
-
 Overview of final form of the behavioral testing data:   
 
 ```{r final test_dat view}
@@ -692,15 +689,10 @@ pander(head(sample_n(test_dat, 42), 15),
 save(test_dat, file = "tidy_testing.RData")
 ```
 
-```{r rm grp_assigns, echo=FALSE, results='hide'}
-rm(grp_assigns)
-```
-
-
 ## R session information:
 ```{r session info, echo=FALSE}
 devtools::session_info(
-    c("tidyverse", "readxl", "broom", "stringr",
+    c("tidyverse", "readxl", "stringr",
     "rmarkdown", "knitr", "pander"))
 
 ```

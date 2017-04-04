@@ -268,15 +268,14 @@ Notably, for each dataset observation is synonymous with row and variable is syn
     <span class="kw">library</span>(knitr)  ## knit markdown docs (output)
     <span class="kw">library</span>(readxl) ## read MS Excel worksheets into data tables
     <span class="kw">library</span>(pander)  ## generate tables in output
-    <span class="kw">library</span>(broom) ## 'tidy()' summary output into a data frame
-    <span class="kw">library</span>(stringr)  ## use substr() to extract info
+    <span class="kw">library</span>(stringr)  ## str_detect()
     <span class="kw">library</span>(tidyverse)  ## data wrangling: dplyr, tidyr
 })</code></pre></div>
 </div>
 <div id="data-import" class="section level2">
 <h2>Data Import</h2>
-<p>The behavioral data for 14x02 is contained in two worksheets within a Microsoft Excel workbook. Likewise, the behavioral data for 14x04 is contained in two worksheets within a Microsoft Excel workbook. The 14x04 workbook also contains the context order for the training days (both 14x02 and 14x04). Finally, an additional workbook contains the treatment group assignments for the rats in both studies.<br />
-In this step the data is imported from the Excel workbook into data tables.</p>
+<p>The behavioral data for 14x02 is contained are two worksheets within a Microsoft Excel workbook. Likewise, the behavioral data for 14x04 are contained in two worksheets within a Microsoft Excel workbook. The 14x04 workbook also contains the context order for the training days (both 14x02 and 14x04). Finally, an additional workbook contains the treatment group assignments for the rats in both studies.<br />
+In this step the data are imported from the Excel workbook into data tables.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## path to 14x02 Excel workbook with experiment data (base R)
 path_14x02 &lt;-<span class="st"> </span><span class="kw">file.path</span>(<span class="st">&quot;neuroinflam_CDC_raw_data&quot;</span>,
     <span class="st">&quot;14x02_raw_ behav_data.xlsx&quot;</span>)
@@ -398,7 +397,7 @@ grp_assigns &lt;-<span class="st"> </span><span class="kw">read_excel</span>(<sp
 </div>
 <div id="inspection-of-missing-values" class="section level4">
 <h4>Inspection of missing values:</h4>
-<p>Are there rows in the 14x02 training data set that do not have <strong>any</strong> raw freezing data? If so, how many rows? To answer this question we look for rows in which the value for <em>all</em> the variables containing the raw freezing data are <em>NA</em> (missing).</p>
+<p>Are there rows in the 14x02 training dataset that do not have <strong>any</strong> raw freezing data? If so, how many rows? To answer this question we look for rows in which the value for <em>all</em> the variables containing the raw freezing data are <em>NA</em> (missing).</p>
 <p>First, we can look at a vector of the number of missing raw data values for each observation.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">rowSums</span>(<span class="kw">is.na</span>(train_14x02[,<span class="kw">c</span>(<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>,<span class="dv">11</span>,<span class="dv">13</span>,<span class="dv">15</span>)]))</code></pre></div>
 <pre><code>##   [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
@@ -1386,7 +1385,7 @@ test_dat &lt;-<span class="st"> </span>test_dat <span class="op">%&gt;%</span>
 ##  language (EN)                        
 ##  collate  English_United States.1252  
 ##  tz       America/Los_Angeles         
-##  date     2017-04-03</code></pre>
+##  date     2017-04-04</code></pre>
 <pre><code>## Packages ------------------------------------------------------------------</code></pre>
 <pre><code>##  package      * version  date       source                           
 ##  assertthat     0.1      2013-12-06 CRAN (R 3.3.1)                   
@@ -1394,7 +1393,7 @@ test_dat &lt;-<span class="st"> </span>test_dat <span class="op">%&gt;%</span>
 ##  base64enc      0.1-3    2015-07-28 CRAN (R 3.3.1)                   
 ##  BH             1.62.0-1 2016-11-19 CRAN (R 3.3.2)                   
 ##  bitops         1.0-6    2013-08-17 CRAN (R 3.3.1)                   
-##  broom        * 0.4.2    2017-02-13 CRAN (R 3.3.2)                   
+##  broom          0.4.2    2017-02-13 CRAN (R 3.3.2)                   
 ##  caTools        1.17.1   2014-09-10 CRAN (R 3.3.1)                   
 ##  colorspace     1.3-2    2016-12-14 CRAN (R 3.3.2)                   
 ##  curl           2.4      2017-03-24 CRAN (R 3.3.3)                   
