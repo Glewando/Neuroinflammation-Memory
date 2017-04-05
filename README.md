@@ -1,5 +1,4 @@
-# Neuroinflammation-Memory
-Impact of neuroinflammation of contextual memory and neuronal circuit activity in rats 
+## Impact of neuroinflammation on contextual memory and neuronal circuit activity in rats 
 
 Data from Dr. John Guzowski, University of California, Department of Neurobiology and The Center for the Neurobiology of Learning and Memory (CNLM)
 
