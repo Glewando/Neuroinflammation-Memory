@@ -6,7 +6,7 @@ Neuroinflammation is implicated in cognitive deficits associated with aging, dis
 
 Rats were trained in a contextual memory task called context discrimination conditioning (CDC). Essentially, the rats were placed into two similar behavioral chambers (context A and context A’) daily during the training portion of the experiment. Context A was paired with a brief, mild footshock.
 
-Upon reaching discrimination criterion, each subject received an intraperitoneal (i.p.) injection of minocycline (50 mg/kg) or saline and a second identical dose the next day. Thirty minutes after the second dose of minocycline or saline, LPS (150 μμg/kg, i.p.) or saline was administered 6 h prior to testing in each of the contexts.
+Upon reaching discrimination criterion, each subject received an intraperitoneal (i.p.) injection of minocycline (50 mg/kg) or saline and a second identical dose the next day. Thirty minutes after the second dose of minocycline or saline, LPS (150 μg/kg, i.p.) or saline was administered 6 h prior to testing in each of the contexts.
 
 The experimental data generated for analyses are:
 
