@@ -4,6 +4,7 @@ title: 'Neuroinflammation effect on context discrimination memory: Data Import a
 author: "G. Lewandowski"
 date: "March 31, 2017"
 output:
+  github_document:
   pdf_document:
     highlight: tango
     toc: yes
