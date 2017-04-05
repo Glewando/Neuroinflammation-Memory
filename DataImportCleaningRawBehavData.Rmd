@@ -536,7 +536,7 @@ rowSums(is.na(test_14x04[,c(2:6, 14:16)]))
 
 Row 1 of the `test_14x04` dataset has 1 missing value.  However, from the overview of the dataset, we can see that the first row is for a rat in the 14x02 study.  This row will be removed during the data cleaning step and we don't need to do anything here.  
 
-## Testing data Data Cleaning   
+## Testing Data Cleaning   
 In this step the identified issues in the 14x02 and 14x04 behavioral testing data are addressed.  
 
 ### Select variables containing raw testing data  
