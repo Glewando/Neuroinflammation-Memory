@@ -145,12 +145,12 @@ grp_assigns <- read_excel(path = path_grps,
 
 ```{r save original train and test data, echo=FALSE}
 ## save imported worksheets as RData objects
-save(train_14x02, file = "original_14x02_train_dat.RData")
-save(test_14x02, file = "original_14x02_test_dat.RData")
-save(train_14x04, file = "original_14x04_train_dat.RData")
-save(test_14x04, file = "original_14x04_test_dat.RData")
-save(context_order, file = "context_order_for_training.RData")
-save(grp_assigns, file = "grp_assigns.RData")
+save(train_14x02, file = "processed_data/original_14x02_train_dat.RData")
+save(test_14x02, file = "processed_data/original_14x02_test_dat.RData")
+save(train_14x04, file = "processed_data/original_14x04_train_dat.RData")
+save(test_14x04, file = "processed_data/original_14x04_test_dat.RData")
+save(context_order, file = "processed_data/context_order_for_training.RData")
+save(grp_assigns, file = "processed_data/grp_assigns.RData")
 ```
 
 ```{r rm path vars, echo=FALSE, results='hide'}
@@ -429,13 +429,13 @@ pander(head(sample_n(train_dat, 421), 15),
 ```
 
 ```{r save train_dat table, echo=FALSE}
-save(train_dat, file = "tidy_training.RData")
+save(train_dat, file = "processed_data/tidy_training.RData")
 ```
 
 ```{r cleanup 01, echo=FALSE, results='hide'}
-save(train_14x02, file = "tidy_train_14x02.RData")
-save(train_14x04, file = "tidy_train_14x04.RData")
-save(train_dat, file = "tidy_training.RData")
+save(train_14x02, file = "processed_data/tidy_train_14x02.RData")
+save(train_14x04, file = "processed_data/tidy_train_14x04.RData")
+save(train_dat, file = "processed_data/tidy_training.RData")
 
 rm(train_14x02, train_14x04, vars, context_order)
 ```
@@ -638,8 +638,8 @@ test_dat <- select(test_dat,
 ```
 
 ```{r save test dats, echo=FALSE}
-save(test_14x02, file = "tidy_test_14x02.RData")
-save(test_14x04, file = "tidy_test_14x04.RData")
+save(test_14x02, file = "processed_data/tidy_test_14x02.RData")
+save(test_14x04, file = "processed_data/tidy_test_14x04.RData")
 
 rm(vars, test_14x02, test_14x04)
 ```
@@ -687,7 +687,7 @@ pander(head(sample_n(test_dat, 42), 15),
 ```
 
 ```{r save test_dat table, echo=FALSE}
-save(test_dat, file = "tidy_testing.RData")
+save(test_dat, file = "processed_data/tidy_testing.RData")
 ```
 
 ## R session information:

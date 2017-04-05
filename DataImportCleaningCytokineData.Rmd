@@ -115,8 +115,8 @@ pcr_14x04 <- read_excel(path = path_14x04,
 
 ```{r save qRT-PCR data, echo=FALSE}
 ## save imported worksheets as RData objects
-save(pcr_14x02, file = "original_pcr_14x02_dat.RData")
-save(pcr_14x04, file = "original_pcr_14x04_dat.RData")
+save(pcr_14x02, file = "processed_data/original_pcr_14x02_dat.RData")
+save(pcr_14x04, file = "processed_data/original_pcr_14x04_dat.RData")
 ```
 
 ```{r rm path vars, echo=FALSE, results='hide'}
@@ -311,9 +311,9 @@ pcr_dat <- pcr_dat %>%
 ```
 
 ```{r save pcr dt, echo=FALSE}
-save(pcr_14x02, file = "tidy_pcr_14x02.RData")
-save(pcr_14x04, file = "tidy_pcr_14x04.RData")
-save(pcr_dat, file = "tidy_pcr_data.RData")
+save(pcr_14x02, file = "processed_data/tidy_pcr_14x02.RData")
+save(pcr_14x04, file = "processed_data/tidy_pcr_14x04.RData")
+save(pcr_dat, file = "processed_data/tidy_pcr_data.RData")
 ```
 
 Overview of final form of the behavioral qRT-PCR data:   
