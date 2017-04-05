@@ -1,6 +1,6 @@
 ---
 title: 'Neuroinflammation effect on context discrimination memory: Data Import and
-  Cleaning of raw training and testing behavioral data'
+  Cleaning of Raw Training and Testing Behavioral data'
 author: "G. Lewandowski"
 date: "March 31, 2017"
 output:
